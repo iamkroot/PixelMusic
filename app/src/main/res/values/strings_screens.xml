@@ -1,10 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <!-- Navigation / misc -->
     <string name="nav_error_genre_id_missing">Error: Genre ID missing</string>
     <string name="easter_egg_thank_you">Thank you for using PixelMusic!</string>
-
-    <!-- Word delimiter config -->
     <string name="word_delimiter_section_title">Current Word Delimiters</string>
     <string name="word_delimiter_section_subtitle">These keywords split artist names when surrounded by spaces. Matched case-insensitively. Tap to remove.</string>
     <string name="word_delimiter_empty">No word delimiters configured</string>
@@ -19,8 +16,6 @@
     <string name="word_delimiter_toast_invalid">Already exists or is invalid</string>
     <string name="word_delimiter_toast_reset">Word delimiters reset to defaults</string>
     <string name="action_reset">Reset</string>
-
-    <!-- Delimiter config (path separators) -->
     <string name="delimiter_section_title">Current Delimiters</string>
     <string name="delimiter_section_subtitle">Tap a delimiter to remove it. At least one delimiter is required.</string>
     <string name="delimiter_add_title">Add New Delimiter</string>
@@ -35,12 +30,8 @@
     <string name="path_delimiters_toolbar_title">Delimiters</string>
     <string name="delimiter_label_space">Space</string>
     <string name="cd_add_path_delimiter">Add delimiter</string>
-
-    <!-- Accounts -->
     <string name="accounts_google_drive_soon">Google Drive is coming soon.</string>
     <string name="accounts_unable_open_screen">Unable to open this screen right now.</string>
-
-    <!-- Setup (subset; more keys follow in same file) -->
     <string name="setup_welcome_prefix">Welcome to </string>
     <string name="setup_beta_symbol">β</string>
     <string name="setup_beta_label">Beta</string>
@@ -81,8 +72,6 @@
     <string name="toast_grant_all_permissions">Please grant all required permissions.</string>
     <string name="toast_grant_storage_first">Grant storage permissions first</string>
     <string name="toast_battery_settings_unavailable">Could not open battery settings</string>
-
-    <!-- Content descriptions -->
     <string name="cd_expand_menu">Expand menu</string>
     <string name="cd_next_step">Next</string>
     <string name="cd_finish">Finish</string>
@@ -90,8 +79,6 @@
     <string name="cd_remove">Remove</string>
     <string name="cd_add_word_delimiter">Add word delimiter</string>
     <string name="cd_reset_defaults">Reset defaults</string>
-
-    <!-- Setup (additional literals) -->
     <string name="setup_excluded_folders_title">Excluded folders</string>
     <string name="setup_excluded_folders_description">Pick folders to ignore when scanning your music library.</string>
     <string name="setup_choose_folders_ignore">Choose folders to ignore</string>
@@ -124,12 +111,8 @@
     <string name="setup_disable_battery_optimization">Disable Optimization</string>
     <string name="setup_nav_floating_pill_description">Floating pill with rounded corners</string>
     <string name="setup_nav_full_width_description">Standard full-width bar</string>
-
-    <!-- Delete song (Material dialog from ViewModel) -->
     <string name="dialog_delete_song_title">Delete song?</string>
     <string name="dialog_delete_song_message">\"%1$s\" by %2$s\n\nThis song will be permanently deleted from your device and cannot be recovered.</string>
-
-    <!-- Home / detail shared -->
     <string name="home_your_mix_title">Your\nMix</string>
     <string name="home_empty_placeholder_title">No data to show yet</string>
     <string name="home_empty_placeholder_subtitle">Your mix will appear here when PixelMusic finds songs or syncs a source.</string>
@@ -145,8 +128,6 @@
     <string name="album_detail_meta_line">%1$s · %2$s</string>
     <string name="mashup_cd_play_pause">Play/Pause</string>
     <string name="cd_song_cover">Song cover</string>
-
-    <!-- Crash report dialog -->
     <string name="crash_report_title">Oops! Something went wrong</string>
     <string name="crash_report_subtitle">The app crashed during your last session. Help us fix this by sharing the crash report.</string>
     <string name="crash_report_date_line">Date: %1$s</string>
@@ -158,8 +139,6 @@
     <string name="crash_report_share_chooser">Share crash report</string>
     <string name="action_copy">Copy</string>
     <string name="action_share">Share</string>
-
-    <!-- Search screen -->
     <string name="search_placeholder">Search…</string>
     <string name="cd_search_icon">Search</string>
     <string name="cd_clear_search_query">Clear search</string>
@@ -172,12 +151,8 @@
     <string name="search_nothing_found">Nothing found</string>
     <string name="search_try_different_or_filters">Try a different search term or check your filters.</string>
     <string name="search_no_results_found">No results found.</string>
-
-    <!-- Genre browse -->
     <string name="browse_by_genre">Browse by genre</string>
     <string name="no_genres_available">No genres available.</string>
-
-    <!-- About -->
     <string name="about_no_contributors">No contributors found right now. Please try again later.</string>
     <string name="about_app_name">PixelMusic</string>
     <string name="about_tagline">Open source music player built with its community.</string>
@@ -197,8 +172,6 @@
     <string name="cd_open_telegram">Open Telegram</string>
     <string name="cd_contributor_avatar">Avatar of %1$s</string>
     <string name="cd_contributor_icon">Icon of %1$s</string>
-
-    <!-- Streaming / cloud dashboards -->
     <string name="screen_subsonic_dashboard_title">Subsonic</string>
     <string name="dash_playlists_synced_count">%1$d playlists synced</string>
     <string name="dash_folders_synced_count">%1$d folders synced</string>
@@ -308,7 +281,6 @@
     <string name="accounts_sync_library_now">Sync Library Now</string>
     <string name="accounts_syncing_library">Syncing Library...</string>
     <string name="accounts_sign_in_youtube">Sign in to YouTube Music</string>
-    <string name="accounts_available_services">Available Services</string>
     <string name="player_play_next">Play next</string>
     <string name="player_save_to_playlist">Save to playlist</string>
     <string name="player_start_mix_from_this">Start Mix from this</string>
@@ -402,8 +374,6 @@
     <string name="cd_search">Search</string>
     <string name="search_results">Search results</string>
     <string name="song_info_resolving_format">Resolving %1$s • %2$s kbps • %3$s</string>
-
-    <!-- Automated Comprehensive Translations -->
     <string name="tab_playlists">PLAYLISTS</string>
     <string name="tab_folders">FOLDERS</string>
     <string name="tab_liked">LIKED</string>
@@ -477,9 +447,54 @@
     <string name="toast_downloading_album_songs">Downloading album songs...</string>
     <string name="toast_tuned_out_added">Tuned out: Will recommend this song less</string>
     <string name="toast_tuned_out_removed">Removed from tuned out</string>
-
     <string name="toast_deleted_from_offline_cache">Deleted from offline cache</string>
     <string name="toast_download_cancelled">Download cancelled</string>
     <string name="toast_download_started">Download started</string>
     <string name="toast_removed_dislike">Removed dislike</string>
+    <string name="audio_bookmarks_back_to_top">Back to top</string>
+    <string name="audio_bookmarks_clear_filter">Clear filter</string>
+    <string name="audio_bookmarks_name_label">Bookmark name</string>
+    <string name="audio_bookmarks_title">Bookmarks</string>
+    <string name="audio_bookmarks_cd_open">Audio bookmarks</string>
+    <string name="audio_bookmarks_cd_add">Save bookmark</string>
+    <string name="setup_external_services_title">Optional Online Services</string>
+    <string name="setup_external_services_subtitle">PixelMusic works offline by default. Enable only the lookups you want.</string>
+    <string name="setup_external_lyrics_title">Online lyrics from LRCLIB</string>
+    <string name="setup_external_lyrics_description">Search lrclib.net when local or embedded lyrics are missing.</string>
+    <string name="setup_external_artist_images_title">Artist artwork from Deezer</string>
+    <string name="setup_external_artist_images_description">Fetch missing artist photos from Deezer and cache them locally.</string>
+    <string name="setup_external_services_footer">You can change these later in Settings &gt; Music Management &gt; Optional online services.</string>
+    <string name="about_project_title">Project</string>
+    <string name="about_project_subtitle">Source, releases, and community entry points.</string>
+    <string name="about_link_source_title">Source code</string>
+    <string name="about_link_source_subtitle">github.com/lostf1sh/PixelMusic</string>
+    <string name="about_link_fdroid_title">F-Droid</string>
+    <string name="about_link_fdroid_subtitle">Available on the F-Droid catalog</string>
+    <string name="cd_about_open_link">Open %1$s</string>
+    <string name="about_support_eyebrow">GitHub Sponsors</string>
+    <string name="about_support_title">Support PixelMusic</string>
+    <string name="about_support_body">Help keep the FOSS edition maintained, reviewed, and tested for real Android devices.</string>
+    <string name="about_support_chip_foss">FOSS maintenance</string>
+    <string name="about_support_chip_ci">CI and releases</string>
+    <string name="about_support_chip_streaming">Self-hosted music</string>
+    <string name="about_support_cta">Sponsor on GitHub</string>
+    <string name="cd_open_telegram_profile">Open Telegram profile</string>
+    <string name="dash_library_playlist_title">Library</string>
+    <string name="dash_libraries_title">Libraries</string>
+    <string name="dash_libraries_all">All libraries</string>
+    <string name="dash_libraries_selected_count">%1$d of %2$d selected</string>
+    <string name="dash_libraries_more_count">+%1$d more</string>
+    <string name="dash_libraries_change">Change</string>
+    <string name="dash_libraries_load_failed">Could not load libraries; sync uses all</string>
+    <string name="dash_libraries_sheet_subtitle">Choose which server libraries are included when syncing the main library.</string>
+    <string name="dash_libraries_all_subtitle">Include every library exposed by this server</string>
+    <string name="dash_libraries_folder_subtitle">Include this library in the next library sync</string>
+    <string name="dash_libraries_sync_needed">Sync library to apply changes</string>
+    <string name="dash_libraries_not_music">Not a music library</string>
+    <string name="cd_artist_format">Artist: %1$s</string>
+    <string name="cd_play_artist">Play artist</string>
+    <string name="cd_play_playlist">Play playlist</string>
+    <string name="cd_toggle_grid_list">Toggle grid/list view</string>
+    <string name="cd_genre_illustration">Genre illustration</string>
+    <string name="dash_last_synced_format">Last synced: %1$s</string>
 </resources>

@@ -1,4 +1,4 @@
-﻿import java.util.Properties
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -17,20 +17,60 @@ val keystoreProperties = Properties().apply {
     }
 }
 
-val releaseSigningStoreFile = rootProject.file(
-    keystoreProperties.getProperty("storeFile") ?: "vz-pixelplay.jks"
-)
+val localProperties = Properties().apply {
+    val propFile = rootProject.file("local.properties")
+    if (propFile.exists()) {
+        propFile.inputStream().use { load(it) }
+    }
+}
+
+val defaultReleaseKeystorePath = "${System.getProperty("user.home")}/.local/share/android.jks"
+val releaseKeystorePath =
+    localProperties.getProperty("RELEASE_KEYSTORE_PATH")?.trim()
+        ?: System.getenv("RELEASE_KEYSTORE_PATH")?.trim()
+        ?: keystoreProperties.getProperty("storeFile")?.trim()
+        ?: defaultReleaseKeystorePath
+val releaseKeystoreFile = file(releaseKeystorePath).let {
+    if (it.isFile) it else file("vz-pixelplay.jks")
+}
+val releaseStorePassword =
+    localProperties.getProperty("RELEASE_STORE_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: localProperties.getProperty("STORE_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("RELEASE_STORE_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("STORE_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties.getProperty("storePassword")?.takeIf { it.isNotBlank() }
+val releaseKeyAlias =
+    localProperties.getProperty("RELEASE_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+        ?: localProperties.getProperty("KEY_ALIAS")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("RELEASE_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties.getProperty("keyAlias")?.takeIf { it.isNotBlank() }
+        ?: "key0"
+val releaseKeyPassword =
+    localProperties.getProperty("RELEASE_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: localProperties.getProperty("KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("RELEASE_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties.getProperty("keyPassword")?.takeIf { it.isNotBlank() }
+        ?: releaseStorePassword
 val disableReleaseSigning = providers.gradleProperty("pixelplayer.disableReleaseSigning")
     .getOrElse("false")
     .toBoolean()
 val hasReleaseSigningConfig = !disableReleaseSigning &&
-    releaseSigningStoreFile.isFile &&
-    keystoreProperties.getProperty("storePassword") != null &&
-    keystoreProperties.getProperty("keyAlias") != null &&
-    keystoreProperties.getProperty("keyPassword") != null
+    releaseKeystoreFile.isFile &&
+    releaseStorePassword != null &&
+    releaseKeyAlias != null &&
+    releaseKeyPassword != null
+
+if (hasReleaseSigningConfig) {
+    println("[SIGNING] Release signing config is ACTIVE using: ${releaseKeystoreFile.absolutePath} (alias: $releaseKeyAlias)")
+} else {
+    println("[SIGNING] Release signing config is NOT ACTIVE (falling back to debug)")
+}
 
 val enableAbiSplits = providers.gradleProperty("pixelplayer.enableAbiSplits")
-    .getOrElse("true")
+    .getOrElse("false")
     .toBoolean()
 
 val enableComposeCompilerReports = providers.gradleProperty("pixelplayer.enableComposeCompilerReports")
@@ -78,11 +118,17 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.unshoo.pixelmusic"
+        applicationId = localProperties.getProperty("APPLICATION_ID")?.trim()
+            ?: (project.findProperty("APPLICATION_ID") as? String)?.trim()
+            ?: "dev.kroot.pixelmusic"
         minSdk = 30
         targetSdk = 37
-        versionCode = (project.findProperty("APP_VERSION_CODE") as? String)?.toInt() ?: 1
-        versionName = (project.findProperty("APP_VERSION_NAME") as? String) ?: "1.0.0"
+        versionCode = localProperties.getProperty("VERSION_CODE")?.toIntOrNull()
+            ?: (project.findProperty("APP_VERSION_CODE") as? String)?.toInt()
+            ?: 1
+        versionName = localProperties.getProperty("VERSION_NAME")?.trim()
+            ?: (project.findProperty("APP_VERSION_NAME") as? String)
+            ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -90,11 +136,46 @@ android {
     signingConfigs {
         if (hasReleaseSigningConfig) {
             create("release") {
-                storeFile = releaseSigningStoreFile
-                storePassword = checkNotNull(keystoreProperties.getProperty("storePassword"))
-                keyAlias = checkNotNull(keystoreProperties.getProperty("keyAlias"))
-                keyPassword = checkNotNull(keystoreProperties.getProperty("keyPassword"))
+                storeFile = releaseKeystoreFile
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
             }
+        }
+    }
+
+    flavorDimensions += listOf("distribution", "device", "abi")
+    productFlavors {
+        create("gms") {
+            dimension = "distribution"
+            isDefault = true
+            buildConfigField("String", "DISTRIBUTION", "\"gms\"")
+        }
+        create("foss") {
+            dimension = "distribution"
+            buildConfigField("String", "DISTRIBUTION", "\"foss\"")
+        }
+        create("mobile") {
+            dimension = "device"
+            buildConfigField("String", "DEVICE", "\"mobile\"")
+        }
+        create("automotive") {
+            dimension = "device"
+            isDefault = true
+            buildConfigField("String", "DEVICE", "\"automotive\"")
+        }
+        create("universal") {
+            dimension = "abi"
+            isDefault = true
+            ndk {
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            }
+            buildConfigField("String", "ARCHITECTURE", "\"universal\"")
+        }
+        create("arm64") {
+            dimension = "abi"
+            ndk { abiFilters += "arm64-v8a" }
+            buildConfigField("String", "ARCHITECTURE", "\"arm64\"")
         }
     }
 
@@ -104,8 +185,10 @@ android {
         }
 
         release {
-            if (hasReleaseSigningConfig) {
-                signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseSigningConfig) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
             }
             isMinifyEnabled = true
             isShrinkResources = true

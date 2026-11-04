@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <!-- QueueBottomSheet -->
     <string name="presentation_batch_e_queue_empty">Queue is empty.</string>
     <string name="presentation_batch_e_cd_queue_actions">Queue actions</string>
     <string name="presentation_batch_e_action_clear_queue">Clear queue</string>
@@ -28,7 +27,6 @@
     <string name="presentation_batch_e_cd_dismiss_song">Dismiss song</string>
     <string name="presentation_batch_e_cd_remove_from_playlist">Remove from playlist</string>
     <string name="presentation_batch_e_more_options_for_song">More options for %1$s</string>
-
     <plurals name="presentation_batch_e_queue_tracks_lined_up">
         <item quantity="one">1 track lined up.</item>
         <item quantity="other">%d tracks lined up.</item>
@@ -37,12 +35,8 @@
         <item quantity="one">%d song selected</item>
         <item quantity="other">%d songs selected</item>
     </plurals>
-
-    <!-- PlaylistContainer -->
     <string name="presentation_batch_e_no_playlist_created">No playlist has been created.</string>
     <string name="presentation_batch_e_new_playlist_hint">Touch the \'New Playlist\' button to start.</string>
-
-    <!-- PlaylistCreationDialogs: create flow -->
     <string name="presentation_batch_e_create_playlist_title">Create playlist</string>
     <string name="presentation_batch_e_create_playlist_subtitle">Choose the creation flow.</string>
     <string name="presentation_batch_e_creation_mode_manual">Manual</string>
@@ -51,8 +45,6 @@
     <string name="presentation_batch_e_creation_mode_ai_subtitle_enabled">Generate a curated playlist with advanced controls.</string>
     <string name="presentation_batch_e_creation_mode_ai_subtitle_disabled">Requires a Gemini API key configured in settings.</string>
     <string name="presentation_batch_e_setup_api_key">Set up API key</string>
-
-    <!-- AI playlist lab -->
     <string name="presentation_batch_e_ai_playlist_lab_title">AI Playlist Lab</string>
     <string name="presentation_batch_e_ai_reset">Reset</string>
     <string name="presentation_batch_e_ai_generating">Generating…</string>
@@ -92,8 +84,6 @@
     <string name="presentation_batch_e_ai_custom_chip">Custom…</string>
     <string name="presentation_batch_e_ai_enter_custom_title">Enter custom value</string>
     <string name="presentation_batch_e_ai_enter_custom_label">Enter your custom value</string>
-
-    <!-- AI prompt assembly (sent to model; localized for consistency with UI) -->
     <string name="presentation_batch_e_ai_era_any">Any era</string>
     <string name="presentation_batch_e_ai_prompt_core_request">Core request: %1$s.</string>
     <string name="presentation_batch_e_ai_prompt_mood">Mood target: %1$s.</string>
@@ -107,7 +97,6 @@
     <string name="presentation_batch_e_ai_prompt_prioritize_favorites">Prioritize songs closer to listener favorites when possible.</string>
     <string name="presentation_batch_e_ai_prompt_avoid_explicit">Avoid explicit lyrics whenever alternatives exist.</string>
     <string name="presentation_batch_e_ai_prompt_smooth_transitions">Keep transitions smooth and avoid repetitive artist clustering.</string>
-
     <string-array name="presentation_batch_e_ai_mood_options">
         <item>Chill</item>
         <item>Energetic</item>
@@ -133,8 +122,6 @@
         <item>2010s</item>
         <item>2020s</item>
     </string-array>
-
-    <!-- ReorderPresetsSheet -->
     <string name="presentation_batch_e_reset_presets_title">Reset presets</string>
     <string name="presentation_batch_e_reset_presets_message">This will restore the default preset order and visibility. Continue?</string>
     <string name="presentation_batch_e_manage_presets_title">Manage presets</string>
@@ -142,12 +129,23 @@
     <string name="presentation_batch_e_cd_reset_presets_default">Reset to default</string>
     <string name="presentation_batch_e_cd_visible">Visible</string>
     <string name="presentation_batch_e_cd_hidden">Hidden</string>
-
-    <!-- DailyMixMenu -->
     <string name="presentation_batch_e_daily_mix_how_title">How your Daily Mix is built</string>
     <string name="presentation_batch_e_daily_mix_how_body">Your Daily Mix is built from your favorite and most-played songs. We also add tracks from artists and genres you like so you can discover new music.</string>
     <string name="presentation_batch_e_daily_mix_prompt_label">Tell the AI what you want to listen to today</string>
     <string name="presentation_batch_e_daily_mix_cost_hint">We use a small sample to keep costs low</string>
     <string name="presentation_batch_e_daily_mix_updating">Updating…</string>
     <string name="presentation_batch_e_daily_mix_update">Update Daily Mix</string>
+    <string name="presentation_batch_e_creation_mode_describe">Describe it</string>
+    <string name="presentation_batch_e_creation_mode_describe_subtitle">Type what you want to hear and let the app pick the songs, fully offline.</string>
+    <string name="presentation_batch_e_describe_playlist_title">Describe your playlist</string>
+    <string name="presentation_batch_e_describe_playlist_subtitle">Matched against your library on this device — nothing leaves it.</string>
+    <string name="presentation_batch_e_describe_playlist_hint">e.g. songs to lift weights to</string>
+    <string name="presentation_batch_e_describe_generate">Generate</string>
+    <string name="presentation_batch_e_describe_regenerate">Regenerate</string>
+    <string name="presentation_batch_e_describe_no_matches">No songs in your library match that description.</string>
+    <string name="presentation_batch_e_describe_save">Save playlist</string>
+    <plurals name="presentation_batch_e_describe_result_count">
+        <item quantity="one">%d song matched</item>
+        <item quantity="other">%d songs matched</item>
+    </plurals>
 </resources>

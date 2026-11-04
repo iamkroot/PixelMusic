@@ -1,4 +1,4 @@
-﻿plugins {
+plugins {
     alias(libs.plugins.android.test)
     alias(libs.plugins.baselineprofile)
 }
@@ -17,6 +17,10 @@ android {
         targetSdk = 37
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        missingDimensionStrategy("distribution", "gms")
+        missingDimensionStrategy("device", "automotive")
+        missingDimensionStrategy("abi", "universal")
     }
 
     targetProjectPath = ":app"

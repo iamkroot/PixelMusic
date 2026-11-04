@@ -1,4 +1,5 @@
-<resources>
+<?xml version='1.0' encoding='utf-8'?>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Pixel Music</string>
     <string name="app_name_change_title">App Name Change</string>
     <string name="app_name_change_message">We have changed our app\'s name from PixelMusic to PixelMusic due to a trademark-related issue. Keep playing!</string>
@@ -13,7 +14,6 @@
     <string name="cancel">Cancel</string>
     <string name="import_file">Import</string>
     <string name="search">Search</string>
-
     <string name="lyrics">Lyrics</string>
     <string name="close_lyrics_sheet">Close Lyrics Sheet</string>
     <string name="loading_lyrics">Loading lyrics…</string>
@@ -50,7 +50,6 @@
     <string name="lyrics_sync_offset_reset">Reset</string>
     <string name="lyrics_earlier">Earlier</string>
     <string name="lyrics_later">Later</string>
-
     <string name="sync_scanning">Scanning music files…</string>
     <string name="sync_processing">Processing files…</string>
     <string name="sync_files_progress">%1$d of %2$d files</string>
@@ -82,7 +81,6 @@
     <string name="play_playback">Play</string>
     <string name="playlist_not_found">Playlist not found.</string>
     <string name="disc_number_header">Disc %d</string>
-
     <string name="ai_error_api_key">Please configure a valid API key for the selected AI provider in Settings.</string>
     <string name="ai_error_generic">AI Error: %s</string>
     <string name="ai_error_quota">The selected AI provider rejected the request because the account has no credits or available quota.</string>
@@ -91,16 +89,13 @@
     <string name="ai_prompt_empty">Write an idea for your Daily Mix</string>
     <string name="ai_daily_mix_updated">Daily Mix updated with AI</string>
     <string name="ai_no_songs_for_mix">AI couldn\'t find songs for this mix</string>
-
     <string name="shortcut_shuffle_short">Shuffle</string>
     <string name="shortcut_shuffle_long">Shuffle all songs</string>
     <string name="shortcut_playlist_short">Playlist</string>
     <string name="shortcut_playlist_long">Last played playlist</string>
-
     <string name="tile_shuffle_all">Shuffle All</string>
     <string name="tile_last_playlist">Last Playlist</string>
     <string name="tile_last_playlist_unavailable">No playlist available to open</string>
-
     <string name="invalid_album_id">Invalid album ID</string>
     <string name="album_id_not_found">Album ID not found</string>
     <string name="error_loading_album">Error loading album data: %s</string>
@@ -111,14 +106,11 @@
     <string name="error_loading_artist">Error loading artist data: %s</string>
     <string name="could_not_find_artist">Could not find the artist</string>
     <string name="no_valid_songs">No valid songs found to play</string>
-
     <string name="glance_widget_description">Responsive widget that adapts to its size</string>
     <string name="widget_bar_4x1_desc">Compact player bar</string>
     <string name="widget_control_4x2_desc">Full controls with shuffle and repeat</string>
     <string name="widget_grid_2x2_desc">Minimalist square player</string>
     <string name="service_processing_action">Processing playback action…</string>
-
-    <!-- Playlist bulk actions -->
     <string name="playlist_none_to_share">No playlists to share</string>
     <string name="playlist_share_chooser_title">Share playlists</string>
     <string name="playlist_share_failed">Share failed: %1$s</string>
@@ -127,8 +119,6 @@
     <string name="playlist_export_folder_display">Music/PixelMusic Exports</string>
     <string name="ai_playlist_gemini_key_required">Please configure your Gemini API key in Settings.</string>
     <string name="error_unknown">Unknown error</string>
-
-    <!-- Watch transfer foreground service -->
     <string name="watch_transfer_sending_n_to_watch">Sending %1$d songs to watch</string>
     <string name="watch_transfer_sending_to_watch">Sending to watch</string>
     <string name="watch_transfer_complete">Transfer complete</string>
@@ -147,14 +137,10 @@
     <string name="watch_transfer_starting_short">Starting</string>
     <string name="watch_transfer_channel_name">Watch transfers</string>
     <string name="watch_transfer_channel_description">Shows live progress for phone-to-watch music transfers</string>
-
-    <!-- Cast HTTP server -->
     <string name="cast_server_channel_name">Cast media server</string>
     <string name="cast_server_notification_title">Casting to device</string>
     <string name="cast_server_notification_text">Serving media to Cast device</string>
     <string name="cast_server_foreground_error">%1$s: %2$s</string>
-
-    <!-- Backup / data transfer (ViewModels) -->
     <string name="backup_invalid_format">Invalid backup: %1$s</string>
     <string name="backup_progress_preparing_restore">Preparing restore</string>
     <string name="backup_progress_starting_task">Starting restore task.</string>
@@ -170,8 +156,6 @@
     <string name="restore_partial_unresolved_format">Restore completed with unresolved issues. Failed: %1$s</string>
     <string name="models_fetch_failed">Failed to load models</string>
     <string name="dev_test_crash_message">Test crash triggered from Developer Options - This is intentional for testing the crash reporting system</string>
-
-    <!-- PlayerViewModel -->
     <string name="player_song_not_found_in_list">Song not found in current list</string>
     <string name="player_could_not_locate_song">Could not locate song</string>
     <string name="player_no_songs_in_library_toast">No songs found in library</string>
@@ -204,8 +188,6 @@
     <string name="playlist_restored_toast">Playlist restored</string>
     <string name="delete_songs_permanent_message">These songs will be permanently deleted from your device and cannot be recovered.</string>
     <string name="delete_action">Delete</string>
-
-    <!-- Sleep timer (SleepTimerStateHolder + TimerOptionsBottomSheet) -->
     <string name="sleep_timer_n_minutes_format">%1$d minutes</string>
     <string name="sleep_timer_display_eot">End of track</string>
     <string name="sleep_timer_set_for_minutes_toast">Timer set for %1$d minutes.</string>
@@ -227,8 +209,6 @@
     <string name="ui_format_percent_d">%1$d%%</string>
     <string name="backup_manifest_schema_v">v%1$d</string>
     <string name="backup_manifest_device_line">%1$s %2$s</string>
-
-    <!-- Share Bottom Sheet -->
     <string name="share_sheet_title">Share</string>
     <string name="share_sheet_chooser_title">Share via</string>
     <string name="share_card_tab_song">Song Card</string>
@@ -244,8 +224,6 @@
     <string name="share_card_saved">Card saved to Pictures</string>
     <string name="share_link_copied">Link copied to clipboard</string>
     <string name="share_text_format">Now listening to \"%1$s\" by %2$s 🎵\n%3$s</string>
-
-    <!-- Player Share / Options Menu -->
     <string name="player_menu_share_card">Share Story Card</string>
     <string name="player_menu_download">Download Song</string>
     <string name="player_menu_add_to_playlist">Add to Playlist</string>
@@ -255,8 +233,6 @@
     <string name="action_disliked">Disliked</string>
     <string name="cd_player_more_options">More options</string>
     <string name="cd_player_theme">Change theme</string>
-
-    <!-- Cloud Offline Downloads -->
     <string name="cloud_downloads_title">Downloads</string>
     <string name="cloud_downloads_settings_subtitle">Manage offline tracks and storage</string>
     <string name="cloud_downloads_storage_used">Offline storage used</string>
@@ -282,4 +258,76 @@
     <string name="cloud_download_play_all">Play all</string>
     <string name="cloud_download_shuffle_all">Shuffle all</string>
     <string name="in_your_library">In your library</string>
+    <string name="accounts_listenbrainz_title">ListenBrainz</string>
+    <string name="accounts_listenbrainz_token_dialog_title">Connect ListenBrainz</string>
+    <string name="accounts_listenbrainz_token_dialog_body">Paste your user token to scrobble your listens to ListenBrainz. You can find it in your settings on listenbrainz.org.</string>
+    <string name="accounts_listenbrainz_token_hint">User token</string>
+    <string name="accounts_listenbrainz_connect">Connect</string>
+    <string name="accounts_listenbrainz_connect_failed">Couldn\'t connect. Check your token and server URL, then try again.</string>
+    <string name="accounts_listenbrainz_server_hint">Server URL (optional)</string>
+    <string name="accounts_listenbrainz_server_supporting">Leave empty for listenbrainz.org. Works with self-hosted servers that speak the ListenBrainz API, such as Maloja.</string>
+    <string name="accounts_listenbrainz_invalid_url">Enter a valid server URL, like https://maloja.example.com/apis/listenbrainz</string>
+    <string name="accounts_listenbrainz_custom_server">Scrobbling to %1$s</string>
+    <string name="accounts_listenbrainz_get_token">Open listenbrainz.org</string>
+    <string name="accounts_listenbrainz_needs_reauth">Your token is no longer valid — reconnect to resume scrobbling. Queued listens are kept.</string>
+    <string name="accounts_listenbrainz_reconnect">Reconnect</string>
+    <string name="accounts_listenbrainz_scrobble_local">Scrobble local files</string>
+    <string name="accounts_listenbrainz_scrobble_navidrome">Scrobble Subsonic streaming</string>
+    <string name="accounts_listenbrainz_scrobble_jellyfin">Scrobble Jellyfin streaming</string>
+    <string name="accounts_listenbrainz_toggle_hint">If your server already scrobbles to ListenBrainz, turn that source off here to avoid duplicate listens.</string>
+    <string name="accounts_listenbrainz_stat_listens">Total listens</string>
+    <string name="accounts_listenbrainz_stat_queued">Queued</string>
+    <string name="accounts_listenbrainz_now_playing_label">Scrobbling now</string>
+    <string name="accounts_listenbrainz_now_playing_format">%1$s — %2$s</string>
+    <string name="accounts_listenbrainz_now_playing_idle">Nothing playing right now</string>
+    <string name="lyrics_remote_disabled">Online lyrics are disabled in settings.</string>
+    <string name="sync_preparing_library">Preparing your library…</string>
+    <string name="sync_scanned_count">Scanned %1$d of %2$d songs</string>
+    <string name="player_only_first_n_albums_next">Only the first %1$d albums were added as next</string>
+    <string name="player_albums_will_play_next_format">%1$d albums will play next</string>
+    <string name="player_could_not_add_albums_next">Could not add selected albums as next</string>
+    <string name="player_only_first_n_albums_added_queue">Only the first %1$d albums were added to queue</string>
+    <string name="player_albums_added_to_queue_format">%1$d albums added to queue</string>
+    <string name="player_could_not_add_albums_queue">Could not add selected albums to queue</string>
+    <string name="batch_edit_toolbar_title">Edit %d Songs</string>
+    <string name="batch_edit_info_message">Only modified fields will be updated. Leave fields empty to keep existing values.</string>
+    <string name="batch_edit_mixed_values">(Mixed values)</string>
+    <string name="batch_edit_optional">(Optional - leave empty to skip)</string>
+    <string name="batch_edit_success">Successfully updated %d songs</string>
+    <string name="batch_edit_partial_success">Updated %1$d of %2$d songs. Some files could not be edited.</string>
+    <string name="batch_edit_failed">Failed to update songs</string>
+    <string name="batch_edit_cover_art_heading">Batch Cover Art</string>
+    <string name="batch_edit_cover_art_hint">This will replace the cover art for all %d selected songs</string>
+    <string name="batch_edit_set_cover_art">Set Cover Art for All</string>
+    <string name="batch_edit_remove_all_art">Remove All Cover Art</string>
+    <string name="batch_edit_multiple_covers">(Multiple different covers)</string>
+    <string name="player_error_skipping">Couldn\'t play this track — skipping</string>
+    <string name="sync_failed_toast">Library sync failed. Pull down to refresh and try again.</string>
+    <string name="a11y_toggle_on">On</string>
+    <string name="a11y_toggle_off">Off</string>
+    <string name="setcat_playback_speed">Playback speed</string>
+    <string name="duplicates_title">Duplicate tracks</string>
+    <string name="duplicates_none">No duplicate tracks found.</string>
+    <string name="duplicates_summary">%1$d groups · %2$d tracks</string>
+    <string name="duplicates_group_count">%1$d copies</string>
+    <string name="duplicates_group_title_format">%1$s — %2$s</string>
+    <string name="setcat_find_duplicates_title">Find duplicate tracks</string>
+    <string name="setcat_find_duplicates_subtitle">Scan your library for tracks that appear more than once.</string>
+    <string name="cloud_download_action">Download</string>
+    <string name="cloud_album_download">Download album</string>
+    <string name="cloud_playlist_download" tools:ignore="MissingTranslation">Download playlist</string>
+    <string name="cloud_album_remove_downloads">Remove downloads</string>
+    <string name="cloud_download_selected">Download selected cloud tracks</string>
+    <string name="cloud_download_selected_count">Download %1$d cloud tracks</string>
+    <string name="cloud_download_selected_started">Preparing %1$d cloud tracks for offline playback</string>
+    <string name="musicbrainz_lookup">Find on MusicBrainz</string>
+    <string name="musicbrainz_searching">Searching for recording matches…</string>
+    <string name="musicbrainz_lookup_failed">MusicBrainz lookup failed</string>
+    <string name="musicbrainz_search_failed_fallback">MusicBrainz search failed</string>
+    <string name="musicbrainz_save_failed_fallback">MusicBrainz metadata could not be saved</string>
+    <string name="musicbrainz_choose_match">Choose a MusicBrainz match</string>
+    <string name="musicbrainz_no_results">No suitable recordings were found.</string>
+    <string name="musicbrainz_match_score">Match confidence: %1$d%%</string>
+    <string name="musicbrainz_applied">MusicBrainz identifiers saved. Missing year and placeholder names were enriched.</string>
+    <string name="accounts_available_services">Available services</string>
 </resources>
