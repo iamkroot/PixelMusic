@@ -5,3 +5,7 @@ run = "./gradlew --no-daemon bundleGmsAutomotiveUniversalRelease"
 [tasks.apk]
 description = "Build signed release APK for Android Automotive OS"
 run = "./gradlew --no-daemon assembleGmsAutomotiveUniversalRelease"
+
+[tasks.bump]
+description = "Increment version in gradle.properties (e.g. 'mise run bump', 'mise run bump --minor', or 'mise run bump 0.5.0')"
+run = "./tools/bump-version.py"
