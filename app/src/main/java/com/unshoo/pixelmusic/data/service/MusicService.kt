@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.data.service
+package com.unshoo.pixelmusic.data.service
 
 import android.app.BackgroundServiceStartNotAllowedException
 import android.app.ForegroundServiceStartNotAllowedException
@@ -29,12 +29,15 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionCommands
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
+import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
@@ -150,7 +153,7 @@ suspend fun loadArtworkBytesViaCoil(context: Context, uri: Uri): ByteArray? {
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @AndroidEntryPoint
-class MusicService : MediaSessionService() {
+class MusicService : MediaLibraryService() {
 
     @Inject
     lateinit var engine: DualPlayerEngine
@@ -195,7 +198,7 @@ class MusicService : MediaSessionService() {
     }
 
     private var favoriteSongIds = emptySet<String>()
-    private var mediaSession: MediaSession? = null
+    private var mediaSession: MediaLibrarySession? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var keepPlayingInBackground = true
     private var isManualShuffleEnabled = false
@@ -240,6 +243,14 @@ class MusicService : MediaSessionService() {
         private const val DEFAULT_STREAM_BUFFER_SIZE = 8 * 1024
         private const val WIDGET_ART_FAILURE_RETRY_MS = 30_000L
         private const val WIDGET_QUEUE_PREVIEW_LIMIT = 4
+
+        private const val ROOT_ID = "root"
+        private const val ROOT_SONGS_ID = "root_songs"
+        private const val ROOT_ALBUMS_ID = "root_albums"
+        private const val ROOT_ARTISTS_ID = "root_artists"
+        private const val ROOT_FAVORITES_ID = "root_favorites"
+        private const val ALBUM_PREFIX = "album_"
+        private const val ARTIST_PREFIX = "artist_"
         private const val HEADSET_RECONNECT_RESUME_WINDOW_MS = 15_000L
 
         fun markPendingMediaButtonForegroundStart() {
@@ -498,7 +509,7 @@ class MusicService : MediaSessionService() {
             }
         }
 
-        val callback = object : MediaSession.Callback {
+        val callback = object : MediaLibrarySession.Callback {
             override fun onConnect(
                 session: MediaSession,
                 controller: MediaSession.ControllerInfo
@@ -693,10 +704,219 @@ class MusicService : MediaSessionService() {
                     )
                 }
             }
+
+            @Deprecated("Deprecated in Java/Media3", ReplaceWith("onPlaybackResumption(mediaSession, controller, true)"))
+            override fun onPlaybackResumption(
+                mediaSession: MediaSession,
+                controller: MediaSession.ControllerInfo
+            ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+                return onPlaybackResumption(mediaSession, controller, true)
+            }
+
+            override fun onPlaybackResumption(
+                mediaSession: MediaSession,
+                controller: MediaSession.ControllerInfo,
+                isResumptionFromBackground: Boolean
+            ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+                return serviceScope.future {
+                    restorePlaybackQueueSnapshotIfNeeded()
+                    val player = mediaSession.player
+                    val count = player.mediaItemCount
+                    if (count > 0) {
+                        val items = List(count) { player.getMediaItemAt(it) }
+                        val index = player.currentMediaItemIndex.coerceIn(0, count - 1)
+                        val pos = player.currentPosition.coerceAtLeast(0L)
+                        MediaSession.MediaItemsWithStartPosition(items, index, pos)
+                    } else {
+                        val songs = musicRepository.getRandomSongs(10)
+                        val items = songs.map {
+                            MediaItemBuilder.buildForExternalController(this@MusicService, it)
+                        }
+                        MediaSession.MediaItemsWithStartPosition(items, 0, 0L)
+                    }
+                }
+            }
+
+            override fun onGetLibraryRoot(
+                session: MediaLibrarySession,
+                browser: MediaSession.ControllerInfo,
+                params: MediaLibraryService.LibraryParams?
+            ): ListenableFuture<LibraryResult<MediaItem>> {
+                return Futures.immediateFuture(LibraryResult.ofItem(getRootMediaItem(), params))
+            }
+
+            override fun onGetChildren(
+                session: MediaLibrarySession,
+                browser: MediaSession.ControllerInfo,
+                parentId: String,
+                page: Int,
+                pageSize: Int,
+                params: MediaLibraryService.LibraryParams?
+            ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+                return serviceScope.future {
+                    when {
+                        parentId == ROOT_ID -> {
+                            LibraryResult.ofItemList(getRootChildren(), params)
+                        }
+                        parentId == ROOT_SONGS_ID -> {
+                            val songs = musicRepository.getAllSongsOnce()
+                            val paged = paginateItems(songs, page, pageSize)
+                            val items = paged.map {
+                                MediaItemBuilder.buildForExternalController(this@MusicService, it)
+                            }
+                            LibraryResult.ofItemList(items, params)
+                        }
+                        parentId == ROOT_FAVORITES_ID -> {
+                            val songs = musicRepository.getFavoriteSongsOnce()
+                            val paged = paginateItems(songs, page, pageSize)
+                            val items = paged.map {
+                                MediaItemBuilder.buildForExternalController(this@MusicService, it)
+                            }
+                            LibraryResult.ofItemList(items, params)
+                        }
+                        parentId == ROOT_ALBUMS_ID -> {
+                            val albums = musicRepository.getAllAlbumsOnce()
+                            val paged = paginateItems(albums, page, pageSize)
+                            val items = paged.map { album ->
+                                MediaItem.Builder()
+                                    .setMediaId("$ALBUM_PREFIX${album.id}")
+                                    .setMediaMetadata(
+                                        MediaMetadata.Builder()
+                                            .setTitle(album.title)
+                                            .setArtist(album.artist)
+                                            .setIsBrowsable(true)
+                                            .setIsPlayable(false)
+                                            .setMediaType(MediaMetadata.MEDIA_TYPE_ALBUM)
+                                            .build()
+                                    )
+                                    .build()
+                            }
+                            LibraryResult.ofItemList(items, params)
+                        }
+                        parentId.startsWith(ALBUM_PREFIX) -> {
+                            val albumId = parentId.removePrefix(ALBUM_PREFIX).toLongOrNull()
+                            val songs = albumId?.let { musicRepository.getSongsForAlbum(it).first() }.orEmpty()
+                            val paged = paginateItems(songs, page, pageSize)
+                            val items = paged.map {
+                                MediaItemBuilder.buildForExternalController(this@MusicService, it)
+                            }
+                            LibraryResult.ofItemList(items, params)
+                        }
+                        parentId == ROOT_ARTISTS_ID -> {
+                            val artists = musicRepository.getAllArtistsOnce()
+                            val paged = paginateItems(artists, page, pageSize)
+                            val items = paged.map { artist ->
+                                MediaItem.Builder()
+                                    .setMediaId("$ARTIST_PREFIX${artist.id}")
+                                    .setMediaMetadata(
+                                        MediaMetadata.Builder()
+                                            .setTitle(artist.name)
+                                            .setIsBrowsable(true)
+                                            .setIsPlayable(false)
+                                            .setMediaType(MediaMetadata.MEDIA_TYPE_ARTIST)
+                                            .build()
+                                    )
+                                    .build()
+                            }
+                            LibraryResult.ofItemList(items, params)
+                        }
+                        parentId.startsWith(ARTIST_PREFIX) -> {
+                            val artistId = parentId.removePrefix(ARTIST_PREFIX).toLongOrNull()
+                            val songs = artistId?.let { musicRepository.getSongsForArtist(it).first() }.orEmpty()
+                            val paged = paginateItems(songs, page, pageSize)
+                            val items = paged.map {
+                                MediaItemBuilder.buildForExternalController(this@MusicService, it)
+                            }
+                            LibraryResult.ofItemList(items, params)
+                        }
+                        else -> {
+                            LibraryResult.ofItemList(emptyList(), params)
+                        }
+                    }
+                }
+            }
+
+            override fun onGetItem(
+                session: MediaLibrarySession,
+                browser: MediaSession.ControllerInfo,
+                mediaId: String
+            ): ListenableFuture<LibraryResult<MediaItem>> {
+                return serviceScope.future {
+                    when {
+                        mediaId == ROOT_ID -> LibraryResult.ofItem(getRootMediaItem(), null)
+                        mediaId == ROOT_SONGS_ID || mediaId == ROOT_ALBUMS_ID ||
+                        mediaId == ROOT_ARTISTS_ID || mediaId == ROOT_FAVORITES_ID -> {
+                            val item = getRootChildren().firstOrNull { it.mediaId == mediaId }
+                            if (item != null) LibraryResult.ofItem(item, null)
+                            else LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
+                        }
+                        mediaId.startsWith(ALBUM_PREFIX) -> {
+                            val albumId = mediaId.removePrefix(ALBUM_PREFIX).toLongOrNull()
+                            val album = albumId?.let { musicRepository.getAlbumById(it).first() }
+                            if (album != null) {
+                                val item = MediaItem.Builder()
+                                    .setMediaId(mediaId)
+                                    .setMediaMetadata(
+                                        MediaMetadata.Builder()
+                                            .setTitle(album.title)
+                                            .setArtist(album.artist)
+                                            .setIsBrowsable(true)
+                                            .setIsPlayable(false)
+                                            .setMediaType(MediaMetadata.MEDIA_TYPE_ALBUM)
+                                            .build()
+                                    )
+                                    .build()
+                                LibraryResult.ofItem(item, null)
+                            } else {
+                                LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
+                            }
+                        }
+                        mediaId.startsWith(ARTIST_PREFIX) -> {
+                            val artistId = mediaId.removePrefix(ARTIST_PREFIX).toLongOrNull()
+                            val artist = artistId?.let { musicRepository.getArtistById(it).first() }
+                            if (artist != null) {
+                                val item = MediaItem.Builder()
+                                    .setMediaId(mediaId)
+                                    .setMediaMetadata(
+                                        MediaMetadata.Builder()
+                                            .setTitle(artist.name)
+                                            .setIsBrowsable(true)
+                                            .setIsPlayable(false)
+                                            .setMediaType(MediaMetadata.MEDIA_TYPE_ARTIST)
+                                            .build()
+                                    )
+                                    .build()
+                                LibraryResult.ofItem(item, null)
+                            } else {
+                                LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
+                            }
+                        }
+                        else -> {
+                            val song = musicRepository.getSong(mediaId).first()
+                            if (song != null) {
+                                LibraryResult.ofItem(
+                                    MediaItemBuilder.buildForExternalController(this@MusicService, song),
+                                    null
+                                )
+                            } else {
+                                LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
+                            }
+                        }
+                    }
+                }
+            }
+
+            override fun onSubscribe(
+                session: MediaLibrarySession,
+                browser: MediaSession.ControllerInfo,
+                parentId: String,
+                params: MediaLibraryService.LibraryParams?
+            ): ListenableFuture<LibraryResult<Void>> {
+                return Futures.immediateFuture(LibraryResult.ofVoid())
+            }
         }
 
-        mediaSession = MediaSession.Builder(this, wrapFadingPlayer(engine.masterPlayer))
-            .setCallback(callback)
+        mediaSession = MediaLibrarySession.Builder(this, wrapFadingPlayer(engine.masterPlayer), callback)
             .setSessionActivity(getOpenAppPendingIntent())
             .setBitmapLoader(CoilBitmapLoader(this, serviceScope))
             .build()
@@ -911,7 +1131,7 @@ class MusicService : MediaSessionService() {
         return startCommandResult
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val session = mediaSession
@@ -2268,11 +2488,51 @@ class MusicService : MediaSessionService() {
         requestedItems: List<MediaItem>,
         exposeInternalArtwork: Boolean = false,
     ): TrustedMediaItemsResolution {
-        val songIds = requestedItems.map { it.mediaId }
+        val expandedItems = mutableListOf<MediaItem>()
+        for (item in requestedItems) {
+            val id = item.mediaId
+            when {
+                id == ROOT_SONGS_ID -> {
+                    val songs = musicRepository.getAllSongsOnce()
+                    expandedItems.addAll(songs.map { song ->
+                        if (exposeInternalArtwork) MediaItemBuilder.build(song)
+                        else MediaItemBuilder.buildForExternalController(this, song)
+                    })
+                }
+                id == ROOT_FAVORITES_ID -> {
+                    val songs = musicRepository.getFavoriteSongsOnce()
+                    expandedItems.addAll(songs.map { song ->
+                        if (exposeInternalArtwork) MediaItemBuilder.build(song)
+                        else MediaItemBuilder.buildForExternalController(this, song)
+                    })
+                }
+                id.startsWith(ALBUM_PREFIX) -> {
+                    val albumId = id.removePrefix(ALBUM_PREFIX).toLongOrNull()
+                    val songs = albumId?.let { musicRepository.getSongsForAlbum(it).first() }.orEmpty()
+                    expandedItems.addAll(songs.map { song ->
+                        if (exposeInternalArtwork) MediaItemBuilder.build(song)
+                        else MediaItemBuilder.buildForExternalController(this, song)
+                    })
+                }
+                id.startsWith(ARTIST_PREFIX) -> {
+                    val artistId = id.removePrefix(ARTIST_PREFIX).toLongOrNull()
+                    val songs = artistId?.let { musicRepository.getSongsForArtist(it).first() }.orEmpty()
+                    expandedItems.addAll(songs.map { song ->
+                        if (exposeInternalArtwork) MediaItemBuilder.build(song)
+                        else MediaItemBuilder.buildForExternalController(this, song)
+                    })
+                }
+                else -> {
+                    expandedItems.add(item)
+                }
+            }
+        }
+
+        val songIds = expandedItems.map { it.mediaId }
         val songs = musicRepository.getSongsByIds(songIds).first()
         val songMap = songs.associateBy { it.id }
 
-        return resolveMediaItemsWithTrustedArtworkGrants(requestedItems) { mediaId ->
+        return resolveMediaItemsWithTrustedArtworkGrants(expandedItems) { mediaId ->
             songMap[mediaId]?.let { song ->
                 if (exposeInternalArtwork) {
                     MediaItemBuilder.build(song)
@@ -2399,6 +2659,77 @@ class MusicService : MediaSessionService() {
             .build()
 
         return listOf(likeButton, closeButton, shuffleButton, repeatButton)
+    }
+
+    private fun getRootMediaItem(): MediaItem {
+        return MediaItem.Builder()
+            .setMediaId(ROOT_ID)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle("PixelMusic")
+                    .setIsBrowsable(true)
+                    .setIsPlayable(false)
+                    .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                    .build()
+            )
+            .build()
+    }
+
+    private fun getRootChildren(): ImmutableList<MediaItem> {
+        return ImmutableList.of(
+            MediaItem.Builder()
+                .setMediaId(ROOT_SONGS_ID)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle("Songs")
+                        .setIsBrowsable(true)
+                        .setIsPlayable(false)
+                        .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                        .build()
+                )
+                .build(),
+            MediaItem.Builder()
+                .setMediaId(ROOT_ALBUMS_ID)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle("Albums")
+                        .setIsBrowsable(true)
+                        .setIsPlayable(false)
+                        .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS)
+                        .build()
+                )
+                .build(),
+            MediaItem.Builder()
+                .setMediaId(ROOT_ARTISTS_ID)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle("Artists")
+                        .setIsBrowsable(true)
+                        .setIsPlayable(false)
+                        .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS)
+                        .build()
+                )
+                .build(),
+            MediaItem.Builder()
+                .setMediaId(ROOT_FAVORITES_ID)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle("Favorites")
+                        .setIsBrowsable(true)
+                        .setIsPlayable(false)
+                        .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS)
+                        .build()
+                )
+                .build()
+        )
+    }
+
+    private fun <T> paginateItems(list: List<T>, page: Int, pageSize: Int): List<T> {
+        if (page < 0 || pageSize <= 0) return list
+        val fromIndex = page * pageSize
+        if (fromIndex >= list.size) return emptyList()
+        val toIndex = (fromIndex + pageSize).coerceAtMost(list.size)
+        return list.subList(fromIndex, toIndex)
     }
 
     /**

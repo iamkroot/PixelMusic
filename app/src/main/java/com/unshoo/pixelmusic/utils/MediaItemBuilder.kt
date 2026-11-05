@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.utils
+package com.unshoo.pixelmusic.utils
 
 import android.content.Context
 import android.net.Uri
@@ -289,6 +289,9 @@ object MediaItemBuilder {
             .setTitle(song.title)
             .setArtist(song.displayArtist)
             .setAlbumTitle(song.album)
+            .setIsPlayable(true)
+            .setIsBrowsable(false)
+            .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
 
         exposedArtworkUri?.let { artworkUri ->
             metadataBuilder.setArtworkUri(artworkUri)
