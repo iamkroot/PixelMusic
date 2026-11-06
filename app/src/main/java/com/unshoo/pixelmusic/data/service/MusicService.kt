@@ -468,6 +468,12 @@ class MusicService : MediaLibraryService() {
         }
 
         serviceScope.launch {
+            userPreferencesRepository.aaosCallNavRoutingEnabledFlow.collect { enabled ->
+                engine.setCallNavBypassEnabled(enabled)
+            }
+        }
+
+        serviceScope.launch {
             userPreferencesRepository.resumeOnHeadsetReconnectFlow.collect { enabled ->
                 resumeOnHeadsetReconnectEnabled = enabled
                 if (!enabled) {

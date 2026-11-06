@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.presentation.viewmodel
+package com.unshoo.pixelmusic.presentation.viewmodel
 
 import android.content.Context
 import android.net.Uri
@@ -78,6 +78,7 @@ data class SettingsUiState(
     val pcmFloatOutputSupported: Boolean = true,
     val crossfadeDuration: Int = 2000,
     val persistentShuffleEnabled: Boolean = false,
+    val aaosCallNavRoutingEnabled: Boolean = true,
     val folderBackGestureNavigation: Boolean = true,
     val lyricsSourcePreference: LyricsSourcePreference = LyricsSourcePreference.EMBEDDED_FIRST,
     val autoScanLrcFiles: Boolean = false,
@@ -387,6 +388,12 @@ class SettingsViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            userPreferencesRepository.aaosCallNavRoutingEnabledFlow.collect { enabled ->
+                _uiState.update { it.copy(aaosCallNavRoutingEnabled = enabled) }
+            }
+        }
+
+        viewModelScope.launch {
             userPreferencesRepository.fullPlayerLoadingTweaksFlow.collect { tweaks ->
                 _uiState.update { it.copy(fullPlayerLoadingTweaks = tweaks) }
             }
@@ -685,6 +692,12 @@ class SettingsViewModel @Inject constructor(
     fun setPersistentShuffleEnabled(enabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.setPersistentShuffleEnabled(enabled)
+        }
+    }
+
+    fun setAaosCallNavRoutingEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setAaosCallNavRoutingEnabled(enabled)
         }
     }
 

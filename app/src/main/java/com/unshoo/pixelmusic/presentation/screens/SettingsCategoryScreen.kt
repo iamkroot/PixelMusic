@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.presentation.screens
+package com.unshoo.pixelmusic.presentation.screens
 
 import com.unshoo.pixelmusic.presentation.navigation.navigateSafely
 import com.unshoo.pixelmusic.presentation.components.BackupModuleSelectionDialog
@@ -199,6 +199,10 @@ fun SettingsCategoryScreen(
 ) {
     val category = SettingsCategory.fromId(categoryId) ?: return
     val context = LocalContext.current
+    val isAutomotive = remember(context) {
+        context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_AUTOMOTIVE) ||
+            com.unshoo.pixelmusic.BuildConfig.DEVICE == "automotive"
+    }
     
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val playbackSpeed by settingsViewModel.playbackSpeed.collectAsStateWithLifecycle()
@@ -994,6 +998,16 @@ fun SettingsCategoryScreen(
                                     leadingIcon = { Icon(painterResource(R.drawable.rounded_shuffle_24), null, tint = MaterialTheme.colorScheme.secondary) },
                                     modifier = Modifier.settingHighlight("item_playback_persistent_shuffle", highlightKey)
                                 )
+                                if (isAutomotive) {
+                                    SwitchSettingItem(
+                                        title = stringResource(R.string.setcat_aaos_call_nav_routing_title),
+                                        subtitle = stringResource(R.string.setcat_aaos_call_nav_routing_subtitle),
+                                        checked = uiState.aaosCallNavRoutingEnabled,
+                                        onCheckedChange = { settingsViewModel.setAaosCallNavRoutingEnabled(it) },
+                                        leadingIcon = { Icon(painterResource(R.drawable.ic_phonef), null, tint = MaterialTheme.colorScheme.secondary) },
+                                        modifier = Modifier.settingHighlight("item_playback_aaos_call_nav_routing", highlightKey)
+                                    )
+                                }
                                 SwitchSettingItem(
                                     title = stringResource(R.string.setcat_show_queue_history_title),
                                     subtitle = stringResource(R.string.setcat_show_queue_history_subtitle),
