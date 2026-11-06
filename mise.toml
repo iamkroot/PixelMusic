@@ -1,21 +1,2 @@
 [env]
 PACKAGE_NAME = "dev.kroot.pixelmusic"
-
-[tools]
-"gem:fastlane" = "latest"
-
-[tasks.bundle]
-description = "Build signed release AAB for Android Automotive OS"
-run = "./gradlew --no-daemon bundleGmsAutomotiveUniversalRelease"
-
-[tasks.apk]
-description = "Build signed release APK for Android Automotive OS"
-run = "./gradlew --no-daemon assembleGmsAutomotiveUniversalRelease"
-
-[tasks.bump]
-description = "Increment version in gradle.properties (e.g. 'mise run bump', 'mise run bump --minor', or 'mise run bump 0.5.0')"
-run = "./tools/bump-version.py"
-
-[tasks.release-internal]
-description = "Upload release AAB to Google Play internal track via Fastlane"
-run = "./tools/release.sh"
