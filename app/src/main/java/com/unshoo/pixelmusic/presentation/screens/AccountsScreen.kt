@@ -1,4 +1,4 @@
-﻿@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 
 package com.unshoo.pixelmusic.presentation.screens
 
@@ -94,6 +94,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.unshoo.pixelmusic.R
+import com.unshoo.pixelmusic.data.lastfm.LastFmProfileStats
 import com.unshoo.pixelmusic.data.listenbrainz.ListenBrainzProfileStats
 import com.unshoo.pixelmusic.presentation.components.CollapsibleCommonTopBar
 import com.unshoo.pixelmusic.presentation.components.MiniPlayerHeight
@@ -102,6 +103,9 @@ import com.unshoo.pixelmusic.presentation.navidrome.auth.NavidromeLoginActivity
 import com.unshoo.pixelmusic.presentation.viewmodel.AccountsViewModel
 import com.unshoo.pixelmusic.presentation.viewmodel.ExternalAccountUiModel
 import com.unshoo.pixelmusic.presentation.viewmodel.ExternalServiceAccount
+import com.unshoo.pixelmusic.presentation.viewmodel.LastFmConnectState
+import com.unshoo.pixelmusic.presentation.viewmodel.LastFmStatsUiState
+import com.unshoo.pixelmusic.presentation.viewmodel.LastFmUiModel
 import com.unshoo.pixelmusic.presentation.viewmodel.ListenBrainzConnectState
 import com.unshoo.pixelmusic.presentation.viewmodel.ListenBrainzStatsUiState
 import com.unshoo.pixelmusic.presentation.viewmodel.ListenBrainzUiModel
@@ -123,10 +127,20 @@ fun AccountsScreen(
     val listenBrainzConnectState by viewModel.listenBrainzConnectState.collectAsStateWithLifecycle()
     var showListenBrainzDialog by remember { mutableStateOf(false) }
 
+    val lastFmConnectState by viewModel.lastFmConnectState.collectAsStateWithLifecycle()
+    var showLastFmDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(listenBrainzConnectState) {
         if (listenBrainzConnectState == ListenBrainzConnectState.Success) {
             showListenBrainzDialog = false
             viewModel.resetListenBrainzConnectState()
+        }
+    }
+
+    LaunchedEffect(lastFmConnectState) {
+        if (lastFmConnectState == LastFmConnectState.Success) {
+            showLastFmDialog = false
+            viewModel.resetLastFmConnectState()
         }
     }
 
@@ -197,6 +211,8 @@ fun AccountsScreen(
     val onConnectService: (ExternalServiceAccount) -> Unit = { service ->
         if (service == ExternalServiceAccount.LISTENBRAINZ) {
             showListenBrainzDialog = true
+        } else if (service == ExternalServiceAccount.LASTFM) {
+            showLastFmDialog = true
         } else {
             openService(
                 context = context,
@@ -253,6 +269,8 @@ fun AccountsScreen(
                             painterResource(R.drawable.ic_jellyfin)
                         } else if (account.service == ExternalServiceAccount.NAVIDROME) {
                             painterResource(R.drawable.ic_navidrome_md3)
+                        } else if (account.service == ExternalServiceAccount.LASTFM) {
+                            painterResource(R.drawable.ic_lastfm)
                         } else null,
                         extraContent = if (account.service == ExternalServiceAccount.LISTENBRAINZ) {
                             {
@@ -263,6 +281,19 @@ fun AccountsScreen(
                                         onToggleNavidrome = viewModel::setListenBrainzScrobbleNavidrome,
                                         onToggleJellyfin = viewModel::setListenBrainzScrobbleJellyfin,
                                         onReconnect = { showListenBrainzDialog = true }
+                                    )
+                                }
+                            }
+                        } else if (account.service == ExternalServiceAccount.LASTFM) {
+                            {
+                                uiState.lastFm?.let { lastFm ->
+                                    LastFmCardExtras(
+                                        model = lastFm,
+                                        onToggleLocal = viewModel::setLastFmScrobbleLocal,
+                                        onToggleNavidrome = viewModel::setLastFmScrobbleNavidrome,
+                                        onToggleJellyfin = viewModel::setLastFmScrobbleJellyfin,
+                                        onToggleNowPlaying = viewModel::setLastFmNowPlaying,
+                                        onReconnect = { showLastFmDialog = true }
                                     )
                                 }
                             }
@@ -314,6 +345,19 @@ fun AccountsScreen(
                 onDismiss = {
                     showListenBrainzDialog = false
                     viewModel.resetListenBrainzConnectState()
+                }
+            )
+        }
+
+        if (showLastFmDialog) {
+            LastFmConnectDialog(
+                connectState = lastFmConnectState,
+                initialUsername = uiState.lastFm?.userName,
+                hasCustomCredentials = uiState.lastFm?.hasCustomCredentials == true,
+                onConnect = viewModel::connectLastFm,
+                onDismiss = {
+                    showLastFmDialog = false
+                    viewModel.resetLastFmConnectState()
                 }
             )
         }
@@ -595,6 +639,14 @@ private fun servicePalette(service: ExternalServiceAccount): ServicePalette {
             primaryActionContainer = Color(0xFFFFE3D3),
             primaryActionTint = Color(0xFFA84A17)
         )
+        ExternalServiceAccount.LASTFM -> ServicePalette(
+            iconContainer = Color(0xFFD51007),
+            iconTint = Color.White,
+            statusContainer = Color(0xFFFFEBEE),
+            statusTint = Color(0xFFC62828),
+            primaryActionContainer = Color(0xFFFFEBEE),
+            primaryActionTint = Color(0xFFC62828)
+        )
     }
 }
 
@@ -603,6 +655,7 @@ private fun accountIcon(service: ExternalServiceAccount): ImageVector {
         ExternalServiceAccount.NAVIDROME -> Icons.Rounded.CloudQueue
         ExternalServiceAccount.JELLYFIN -> Icons.Rounded.CloudQueue
         ExternalServiceAccount.LISTENBRAINZ -> Icons.Rounded.GraphicEq
+        ExternalServiceAccount.LASTFM -> Icons.Rounded.GraphicEq
     }
 }
 
@@ -637,6 +690,13 @@ private fun ServiceIcon(service: ExternalServiceAccount, tint: Color, modifier: 
             tint = tint,
             modifier = modifier
         )
+    } else if (service == ExternalServiceAccount.LASTFM) {
+        Icon(
+            painter = painterResource(R.drawable.ic_lastfm),
+            contentDescription = null,
+            tint = tint,
+            modifier = modifier
+        )
     } else {
         Icon(
             imageVector = accountIcon(service),
@@ -653,6 +713,7 @@ private fun serviceDisplayName(service: ExternalServiceAccount): String {
         ExternalServiceAccount.NAVIDROME -> stringResource(R.string.cd_subsonic_logo)
         ExternalServiceAccount.JELLYFIN -> stringResource(R.string.auth_jellyfin_title)
         ExternalServiceAccount.LISTENBRAINZ -> stringResource(R.string.accounts_listenbrainz_title)
+        ExternalServiceAccount.LASTFM -> stringResource(R.string.accounts_lastfm_title)
     }
 }
 
@@ -688,6 +749,12 @@ private fun openService(
             safeStartActivity(
                 context = context,
                 intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://listenbrainz.org"))
+            )
+        }
+        ExternalServiceAccount.LASTFM -> {
+            safeStartActivity(
+                context = context,
+                intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.last.fm"))
             )
         }
     }
@@ -753,6 +820,11 @@ private fun ConnectServiceButton(
             )
             ExternalServiceAccount.LISTENBRAINZ -> Icon(
                 imageVector = Icons.Rounded.GraphicEq,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            ExternalServiceAccount.LASTFM -> Icon(
+                painter = painterResource(R.drawable.ic_lastfm),
                 contentDescription = null,
                 modifier = Modifier.size(18.dp)
             )
@@ -1106,6 +1178,265 @@ private fun ListenBrainzTokenDialog(
                     LoadingIndicator(modifier = Modifier.size(16.dp))
                 } else {
                     Text(stringResource(R.string.accounts_listenbrainz_connect))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun LastFmCardExtras(
+    model: LastFmUiModel,
+    onToggleLocal: (Boolean) -> Unit,
+    onToggleNavidrome: (Boolean) -> Unit,
+    onToggleJellyfin: (Boolean) -> Unit,
+    onToggleNowPlaying: (Boolean) -> Unit,
+    onReconnect: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val showStats = model.statsState != LastFmStatsUiState.Unavailable
+        val showPendingOnly = !showStats && model.pendingCount > 0
+
+        if (showStats) {
+            Crossfade(targetState = model.statsState, label = "lastFmStats") { state ->
+                when (state) {
+                    LastFmStatsUiState.Loading -> LastFmStatsSkeleton()
+                    is LastFmStatsUiState.Loaded -> LastFmStatsContent(
+                        stats = state.stats,
+                        pendingCount = model.pendingCount
+                    )
+                    LastFmStatsUiState.Unavailable -> {}
+                }
+            }
+        } else if (showPendingOnly) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatTile(
+                    title = stringResource(R.string.accounts_lastfm_stat_queued),
+                    value = model.pendingCount.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        if (model.needsReauth) {
+            Surface(
+                shape = AbsoluteSmoothCornerShape(14.dp, 60),
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                    Text(
+                        text = stringResource(R.string.accounts_lastfm_needs_reauth),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    TextButton(onClick = onReconnect) {
+                        Text(
+                            text = stringResource(R.string.accounts_lastfm_reconnect),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
+        ScrobbleSourceToggleRow(
+            label = stringResource(R.string.accounts_lastfm_scrobble_local),
+            checked = model.scrobbleLocal,
+            onCheckedChange = onToggleLocal
+        )
+        ScrobbleSourceToggleRow(
+            label = stringResource(R.string.accounts_lastfm_scrobble_navidrome),
+            checked = model.scrobbleNavidrome,
+            onCheckedChange = onToggleNavidrome
+        )
+        ScrobbleSourceToggleRow(
+            label = stringResource(R.string.accounts_lastfm_scrobble_jellyfin),
+            checked = model.scrobbleJellyfin,
+            onCheckedChange = onToggleJellyfin
+        )
+        ScrobbleSourceToggleRow(
+            label = stringResource(R.string.lastfm_now_playing),
+            checked = model.nowPlayingEnabled,
+            onCheckedChange = onToggleNowPlaying
+        )
+        Text(
+            text = stringResource(R.string.accounts_lastfm_toggle_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun LastFmStatsSkeleton() {
+    val transition = rememberInfiniteTransition(label = "lastFmSkeleton")
+    val progress = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "lastFmSkeletonProgress"
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        SkeletonBlock(
+            progress = progress,
+            shape = AbsoluteSmoothCornerShape(18.dp, 60),
+            modifier = Modifier.weight(1f).height(62.dp)
+        )
+        SkeletonBlock(
+            progress = progress,
+            shape = AbsoluteSmoothCornerShape(18.dp, 60),
+            modifier = Modifier.weight(1f).height(62.dp)
+        )
+    }
+}
+
+@Composable
+private fun LastFmStatsContent(
+    stats: LastFmProfileStats,
+    pendingCount: Int
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            stats.playcount?.let { count ->
+                StatTile(
+                    title = stringResource(R.string.accounts_lastfm_stat_scrobbles),
+                    value = "%,d".format(count),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            if (pendingCount > 0) {
+                StatTile(
+                    title = stringResource(R.string.accounts_lastfm_stat_queued),
+                    value = pendingCount.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LastFmConnectDialog(
+    connectState: LastFmConnectState,
+    initialUsername: String? = null,
+    hasCustomCredentials: Boolean = false,
+    onConnect: (String, String, String?, String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var username by remember { mutableStateOf(initialUsername.orEmpty()) }
+    var password by remember { mutableStateOf("") }
+    var apiKey by remember { mutableStateOf("") }
+    var apiSecret by remember { mutableStateOf("") }
+    var showAdvanced by remember { mutableStateOf(hasCustomCredentials) }
+    val failedState = connectState as? LastFmConnectState.Failed
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.accounts_lastfm_login_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.accounts_lastfm_login_dialog_body),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text(stringResource(R.string.accounts_lastfm_username_hint)) },
+                    singleLine = true,
+                    isError = failedState != null,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text(stringResource(R.string.accounts_lastfm_password_hint)) },
+                    singleLine = true,
+                    isError = failedState != null,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                TextButton(
+                    onClick = { showAdvanced = !showAdvanced }
+                ) {
+                    Text(
+                        if (showAdvanced) "Hide Custom API Credentials" else stringResource(R.string.accounts_lastfm_custom_api_title)
+                    )
+                }
+
+                if (showAdvanced) {
+                    Text(
+                        text = if (hasCustomCredentials) {
+                            "Custom API credentials already saved. Leave blank to keep them, or enter new keys to update."
+                        } else {
+                            stringResource(R.string.accounts_lastfm_custom_api_supporting)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = apiKey,
+                        onValueChange = { apiKey = it },
+                        label = { Text(stringResource(R.string.accounts_lastfm_api_key_hint)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = apiSecret,
+                        onValueChange = { apiSecret = it },
+                        label = { Text(stringResource(R.string.accounts_lastfm_api_secret_hint)) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (failedState != null) {
+                    Text(
+                        text = failedState.message?.takeIf { it.isNotBlank() }
+                            ?: stringResource(R.string.accounts_lastfm_connect_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConnect(
+                        username,
+                        password,
+                        apiKey.takeIf { it.isNotBlank() },
+                        apiSecret.takeIf { it.isNotBlank() }
+                    )
+                },
+                enabled = username.isNotBlank() && password.isNotBlank() && connectState != LastFmConnectState.Connecting
+            ) {
+                if (connectState == LastFmConnectState.Connecting) {
+                    LoadingIndicator(modifier = Modifier.size(16.dp))
+                } else {
+                    Text(stringResource(R.string.accounts_lastfm_connect))
                 }
             }
         },

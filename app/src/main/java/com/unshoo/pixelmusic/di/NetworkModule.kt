@@ -1,5 +1,7 @@
-﻿package com.unshoo.pixelmusic.di
+package com.unshoo.pixelmusic.di
 
+import com.unshoo.pixelmusic.data.lastfm.LastFmApiService
+import com.unshoo.pixelmusic.data.lastfm.LastFmAuthUtils
 import com.unshoo.pixelmusic.data.listenbrainz.ListenBrainzApiService
 import com.unshoo.pixelmusic.data.listenbrainz.ListenBrainzEndpoint
 import dagger.Module
@@ -44,5 +46,22 @@ object NetworkModule {
     @Singleton
     fun provideListenBrainzApiService(@ListenBrainzRetrofit retrofit: Retrofit): ListenBrainzApiService {
         return retrofit.create(ListenBrainzApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @LastFmRetrofit
+    fun provideLastFmRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(LastFmAuthUtils.BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLastFmApiService(@LastFmRetrofit retrofit: Retrofit): LastFmApiService {
+        return retrofit.create(LastFmApiService::class.java)
     }
 }

@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.di
+package com.unshoo.pixelmusic.di
 
 import android.content.Context
 import androidx.annotation.OptIn
@@ -29,6 +29,7 @@ import com.unshoo.pixelmusic.data.database.MIGRATION_2_3
 import com.unshoo.pixelmusic.data.database.MIGRATION_3_4
 import com.unshoo.pixelmusic.data.database.MIGRATION_4_5
 import com.unshoo.pixelmusic.data.database.MIGRATION_5_6
+import com.unshoo.pixelmusic.data.database.MIGRATION_6_7
 import com.unshoo.pixelmusic.data.database.MusicDao
 import com.unshoo.pixelmusic.data.database.OfflineTrackDao
 import com.unshoo.pixelmusic.data.database.PixelPlayerDatabase
@@ -139,6 +140,7 @@ object AppModule {
                 MIGRATION_3_4,
                 MIGRATION_4_5,
                 MIGRATION_5_6,
+                MIGRATION_6_7,
             )
             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
 
@@ -213,6 +215,12 @@ object AppModule {
     @Provides
     fun provideListenBrainzDao(database: PixelPlayerDatabase): ListenBrainzDao {
         return database.listenBrainzDao()
+    }
+
+    @Singleton
+    @Provides
+    fun provideLastFmDao(database: PixelPlayerDatabase): com.unshoo.pixelmusic.data.database.LastFmDao {
+        return database.lastFmDao()
     }
 
     @Singleton

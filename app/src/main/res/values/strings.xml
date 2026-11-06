@@ -280,6 +280,26 @@
     <string name="accounts_listenbrainz_now_playing_label">Scrobbling now</string>
     <string name="accounts_listenbrainz_now_playing_format">%1$s — %2$s</string>
     <string name="accounts_listenbrainz_now_playing_idle">Nothing playing right now</string>
+
+    <string name="accounts_lastfm_title">Last.fm</string>
+    <string name="accounts_lastfm_login_dialog_title">Connect Last.fm</string>
+    <string name="accounts_lastfm_login_dialog_body">Enter your Last.fm username and password to authorize scrobbling.</string>
+    <string name="accounts_lastfm_username_hint">Username</string>
+    <string name="accounts_lastfm_password_hint">Password</string>
+    <string name="accounts_lastfm_api_key_hint">API Key (optional)</string>
+    <string name="accounts_lastfm_api_secret_hint">API Secret (optional)</string>
+    <string name="accounts_lastfm_custom_api_title">Custom API Credentials</string>
+    <string name="accounts_lastfm_custom_api_supporting">Leave empty to use default client credentials, or supply your own Last.fm developer key.</string>
+    <string name="accounts_lastfm_connect">Connect</string>
+    <string name="accounts_lastfm_connect_failed">Couldn\'t connect. Check your credentials and try again.</string>
+    <string name="accounts_lastfm_needs_reauth">Your Last.fm session is no longer valid — reconnect to resume scrobbling. Queued scrobbles are kept.</string>
+    <string name="accounts_lastfm_reconnect">Reconnect</string>
+    <string name="accounts_lastfm_scrobble_local">Scrobble local files</string>
+    <string name="accounts_lastfm_scrobble_navidrome">Scrobble Subsonic streaming</string>
+    <string name="accounts_lastfm_scrobble_jellyfin">Scrobble Jellyfin streaming</string>
+    <string name="accounts_lastfm_toggle_hint">If your server already scrobbles to Last.fm, turn that source off here to avoid duplicate scrobbles.</string>
+    <string name="accounts_lastfm_stat_scrobbles">Total scrobbles</string>
+    <string name="accounts_lastfm_stat_queued">Queued</string>
     <string name="lyrics_remote_disabled">Online lyrics are disabled in settings.</string>
     <string name="sync_preparing_library">Preparing your library…</string>
     <string name="sync_scanned_count">Scanned %1$d of %2$d songs</string>

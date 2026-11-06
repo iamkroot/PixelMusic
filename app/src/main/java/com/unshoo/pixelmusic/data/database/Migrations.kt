@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.data.database
+package com.unshoo.pixelmusic.data.database
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -196,6 +196,39 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
         )
         db.execSQL(
             "CREATE INDEX `index_playlist_songs_song_id` ON `playlist_songs` (`song_id`)"
+        )
+    }
+}
+
+/**
+ * v6 -> v7: opt-in Last.fm scrobbling.
+ *
+ * - `lastfm_pending_scrobbles`: offline scrobble queue. Rows snapshot track metadata at
+ *   enqueue time and are deleted on successful submission or permanent rejection.
+ *
+ * Additive and idempotent.
+ */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+                CREATE TABLE IF NOT EXISTS `lastfm_pending_scrobbles` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `timestamp` INTEGER NOT NULL,
+                    `track_name` TEXT NOT NULL,
+                    `artist_name` TEXT NOT NULL,
+                    `album_name` TEXT,
+                    `duration_seconds` INTEGER,
+                    `recording_mbid` TEXT,
+                    `source` TEXT NOT NULL,
+                    `attempts` INTEGER NOT NULL DEFAULT 0,
+                    `created_at_ms` INTEGER NOT NULL
+                )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_lastfm_pending_scrobbles_timestamp` " +
+                "ON `lastfm_pending_scrobbles` (`timestamp`)"
         )
     }
 }

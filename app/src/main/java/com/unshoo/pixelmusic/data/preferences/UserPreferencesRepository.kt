@@ -90,7 +90,9 @@ constructor(
     private val backupExcludedKeyNames = setOf(
         PreferencesKeys.INITIAL_SETUP_DONE.name,
         "listenbrainz_token",
-        "lastfm_session_key"
+        "lastfm_session_key",
+        "lastfm_api_secret",
+        "lastfm_api_key"
     )
 
     private object PreferencesKeys {
