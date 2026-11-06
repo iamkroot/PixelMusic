@@ -48,6 +48,7 @@ import com.unshoo.pixelmusic.data.diagnostics.AdvancedPerformanceDiagnostics
 import com.unshoo.pixelmusic.data.model.PlayerInfo
 import com.unshoo.pixelmusic.data.model.PlaybackQueueItemSnapshot
 import com.unshoo.pixelmusic.data.model.PlaybackQueueSnapshot
+import com.unshoo.pixelmusic.data.model.Song
 import com.unshoo.pixelmusic.data.preferences.EqualizerPreferencesRepository
 import com.unshoo.pixelmusic.data.preferences.ThemePreferencesRepository
 import com.unshoo.pixelmusic.data.preferences.UserPreferencesRepository
@@ -720,20 +721,24 @@ class MusicService : MediaLibraryService() {
             ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
                 return serviceScope.future {
                     restorePlaybackQueueSnapshotIfNeeded()
-                    val player = mediaSession.player
-                    val count = player.mediaItemCount
-                    if (count > 0) {
-                        val items = List(count) { player.getMediaItemAt(it) }
-                        val index = player.currentMediaItemIndex.coerceIn(0, count - 1)
-                        val pos = player.currentPosition.coerceAtLeast(0L)
-                        MediaSession.MediaItemsWithStartPosition(items, index, pos)
-                    } else {
-                        val songs = musicRepository.getRandomSongs(10)
-                        val items = songs.map {
-                            MediaItemBuilder.buildForExternalController(this@MusicService, it)
+                    val result = withContext(Dispatchers.Main.immediate) {
+                        val player = mediaSession.player
+                        val count = player.mediaItemCount
+                        if (count > 0) {
+                            val items = List(count) { player.getMediaItemAt(it) }
+                            val index = player.currentMediaItemIndex.coerceIn(0, count - 1)
+                            val pos = player.currentPosition.coerceAtLeast(0L)
+                            MediaSession.MediaItemsWithStartPosition(items, index, pos)
+                        } else {
+                            val songs = musicRepository.getRandomSongs(10)
+                            val items = songs.map {
+                                MediaItemBuilder.buildForExternalController(this@MusicService, it)
+                            }
+                            MediaSession.MediaItemsWithStartPosition(items, 0, 0L)
                         }
-                        MediaSession.MediaItemsWithStartPosition(items, 0, 0L)
                     }
+                    grantArtworkUriPermissions(controller.packageName, result.mediaItems)
+                    result
                 }
             }
 
@@ -764,6 +769,7 @@ class MusicService : MediaLibraryService() {
                             val items = paged.map {
                                 MediaItemBuilder.buildForExternalController(this@MusicService, it)
                             }
+                            grantArtworkUriPermissions(browser.packageName, items)
                             LibraryResult.ofItemList(items, params)
                         }
                         parentId == ROOT_FAVORITES_ID -> {
@@ -772,6 +778,7 @@ class MusicService : MediaLibraryService() {
                             val items = paged.map {
                                 MediaItemBuilder.buildForExternalController(this@MusicService, it)
                             }
+                            grantArtworkUriPermissions(browser.packageName, items)
                             LibraryResult.ofItemList(items, params)
                         }
                         parentId == ROOT_ALBUMS_ID -> {
@@ -785,12 +792,14 @@ class MusicService : MediaLibraryService() {
                                             .setTitle(album.title)
                                             .setArtist(album.artist)
                                             .setIsBrowsable(true)
-                                            .setIsPlayable(false)
+                                            .setIsPlayable(true)
                                             .setMediaType(MediaMetadata.MEDIA_TYPE_ALBUM)
+                                            .setArtworkUri(album.albumArtUriString?.let { MediaItemBuilder.externalControllerArtworkUri(this@MusicService, it) })
                                             .build()
                                     )
                                     .build()
                             }
+                            grantArtworkUriPermissions(browser.packageName, items)
                             LibraryResult.ofItemList(items, params)
                         }
                         parentId.startsWith(ALBUM_PREFIX) -> {
@@ -800,6 +809,7 @@ class MusicService : MediaLibraryService() {
                             val items = paged.map {
                                 MediaItemBuilder.buildForExternalController(this@MusicService, it)
                             }
+                            grantArtworkUriPermissions(browser.packageName, items)
                             LibraryResult.ofItemList(items, params)
                         }
                         parentId == ROOT_ARTISTS_ID -> {
@@ -827,6 +837,7 @@ class MusicService : MediaLibraryService() {
                             val items = paged.map {
                                 MediaItemBuilder.buildForExternalController(this@MusicService, it)
                             }
+                            grantArtworkUriPermissions(browser.packageName, items)
                             LibraryResult.ofItemList(items, params)
                         }
                         else -> {
@@ -861,11 +872,13 @@ class MusicService : MediaLibraryService() {
                                             .setTitle(album.title)
                                             .setArtist(album.artist)
                                             .setIsBrowsable(true)
-                                            .setIsPlayable(false)
+                                            .setIsPlayable(true)
                                             .setMediaType(MediaMetadata.MEDIA_TYPE_ALBUM)
+                                            .setArtworkUri(album.albumArtUriString?.let { MediaItemBuilder.externalControllerArtworkUri(this@MusicService, it) })
                                             .build()
                                     )
                                     .build()
+                                grantArtworkUriPermissions(browser.packageName, listOf(item))
                                 LibraryResult.ofItem(item, null)
                             } else {
                                 LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
@@ -894,10 +907,9 @@ class MusicService : MediaLibraryService() {
                         else -> {
                             val song = musicRepository.getSong(mediaId).first()
                             if (song != null) {
-                                LibraryResult.ofItem(
-                                    MediaItemBuilder.buildForExternalController(this@MusicService, song),
-                                    null
-                                )
+                                val item = MediaItemBuilder.buildForExternalController(this@MusicService, song)
+                                grantArtworkUriPermissions(browser.packageName, listOf(item))
+                                LibraryResult.ofItem(item, null)
                             } else {
                                 LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
                             }
@@ -2488,12 +2500,14 @@ class MusicService : MediaLibraryService() {
         requestedItems: List<MediaItem>,
         exposeInternalArtwork: Boolean = false,
     ): TrustedMediaItemsResolution {
+        val resolvedSongs = mutableMapOf<String, Song>()
         val expandedItems = mutableListOf<MediaItem>()
         for (item in requestedItems) {
             val id = item.mediaId
             when {
                 id == ROOT_SONGS_ID -> {
                     val songs = musicRepository.getAllSongsOnce()
+                    songs.forEach { resolvedSongs[it.id] = it }
                     expandedItems.addAll(songs.map { song ->
                         if (exposeInternalArtwork) MediaItemBuilder.build(song)
                         else MediaItemBuilder.buildForExternalController(this, song)
@@ -2501,6 +2515,7 @@ class MusicService : MediaLibraryService() {
                 }
                 id == ROOT_FAVORITES_ID -> {
                     val songs = musicRepository.getFavoriteSongsOnce()
+                    songs.forEach { resolvedSongs[it.id] = it }
                     expandedItems.addAll(songs.map { song ->
                         if (exposeInternalArtwork) MediaItemBuilder.build(song)
                         else MediaItemBuilder.buildForExternalController(this, song)
@@ -2509,6 +2524,7 @@ class MusicService : MediaLibraryService() {
                 id.startsWith(ALBUM_PREFIX) -> {
                     val albumId = id.removePrefix(ALBUM_PREFIX).toLongOrNull()
                     val songs = albumId?.let { musicRepository.getSongsForAlbum(it).first() }.orEmpty()
+                    songs.forEach { resolvedSongs[it.id] = it }
                     expandedItems.addAll(songs.map { song ->
                         if (exposeInternalArtwork) MediaItemBuilder.build(song)
                         else MediaItemBuilder.buildForExternalController(this, song)
@@ -2517,6 +2533,7 @@ class MusicService : MediaLibraryService() {
                 id.startsWith(ARTIST_PREFIX) -> {
                     val artistId = id.removePrefix(ARTIST_PREFIX).toLongOrNull()
                     val songs = artistId?.let { musicRepository.getSongsForArtist(it).first() }.orEmpty()
+                    songs.forEach { resolvedSongs[it.id] = it }
                     expandedItems.addAll(songs.map { song ->
                         if (exposeInternalArtwork) MediaItemBuilder.build(song)
                         else MediaItemBuilder.buildForExternalController(this, song)
@@ -2528,12 +2545,15 @@ class MusicService : MediaLibraryService() {
             }
         }
 
-        val songIds = expandedItems.map { it.mediaId }
-        val songs = musicRepository.getSongsByIds(songIds).first()
-        val songMap = songs.associateBy { it.id }
+        val unresolvedIds = expandedItems.map { it.mediaId }.filter { it !in resolvedSongs }
+        if (unresolvedIds.isNotEmpty()) {
+            unresolvedIds.chunked(900).forEach { chunk ->
+                musicRepository.getSongsByIds(chunk).first().forEach { resolvedSongs[it.id] = it }
+            }
+        }
 
         return resolveMediaItemsWithTrustedArtworkGrants(expandedItems) { mediaId ->
-            songMap[mediaId]?.let { song ->
+            resolvedSongs[mediaId]?.let { song ->
                 if (exposeInternalArtwork) {
                     MediaItemBuilder.build(song)
                 } else {

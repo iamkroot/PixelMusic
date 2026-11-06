@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.presentation.components
+package com.unshoo.pixelmusic.presentation.components
 
 import com.unshoo.pixelmusic.presentation.navigation.navigateToTopLevelSafely
 

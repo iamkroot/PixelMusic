@@ -15,6 +15,11 @@ def main():
         help="Explicit version name to set (e.g. 0.5.0)",
     )
     parser.add_argument(
+        "--major",
+        action="store_true",
+        help="Bump major version (e.g. 0.4.0 -> 1.0.0)",
+    )
+    parser.add_argument(
         "--minor",
         action="store_true",
         help="Bump minor version (e.g. 0.4.0 -> 0.5.0)",
@@ -31,7 +36,7 @@ def main():
     )
     args = parser.parse_args()
 
-    prop_path = Path("gradle.properties")
+    prop_path = Path(__file__).resolve().parent.parent / "gradle.properties"
     if not prop_path.exists():
         print(f"Error: {prop_path} not found.", file=sys.stderr)
         sys.exit(1)
@@ -65,7 +70,9 @@ def main():
                 minor = int(semver.group(2))
                 patch = int(semver.group(3))
                 rest = semver.group(4)
-                if args.minor:
+                if args.major:
+                    new_name = f"{major + 1}.0.0{rest}"
+                elif args.minor:
                     new_name = f"{major}.{minor + 1}.0{rest}"
                 else:
                     new_name = f"{major}.{minor}.{patch + 1}{rest}"
