@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.presentation.components.subcomps
+package com.unshoo.pixelmusic.presentation.components.subcomps
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.Spring
@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp as lerpColor
@@ -52,6 +53,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp as lerpDp
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import com.unshoo.pixelmusic.presentation.utils.rotaryFocusableItem
 import coil.size.Size
 import com.unshoo.pixelmusic.data.model.Song
 import com.unshoo.pixelmusic.presentation.components.AutoScrollingText
@@ -166,7 +170,7 @@ fun EnhancedSongListItem(
     val playbackContentColor = lerpColor(baseContentColor, colors.onPrimaryContainer, highlightProgress)
     val contentColor = lerpColor(playbackContentColor, colors.onSecondaryContainer, selectionVisualProgress)
 
-    val selectionBorderColor = lerpColor(colors.primary.copy(alpha = 0f), colors.primary, selectionVisualProgress)
+    val selectionBorderColor = lerpColor(colors.tertiary.copy(alpha = 0f), colors.tertiary, selectionVisualProgress)
     val mvContainerColor = lerpColor(colors.onSurface, colors.primaryContainer, highlightProgress)
     val mvContentColor = lerpColor(colors.surfaceContainerHigh, colors.onPrimaryContainer, highlightProgress)
     val selectionOverlayColor = lerpColor(
@@ -239,22 +243,42 @@ fun EnhancedSongListItem(
             }
         }
     } else {
+        val interactionSource = remember { MutableInteractionSource() }
+        val isFocused by interactionSource.collectIsFocusedAsState()
+
+        val itemBorderModifier = when {
+            isFocused -> Modifier.border(
+                width = 2.5.dp,
+                color = colors.primary,
+                shape = surfaceShape
+            )
+            showSelectionDecoration -> Modifier.border(
+                width = selectionBorderWidth,
+                color = selectionBorderColor,
+                shape = surfaceShape
+            )
+            else -> Modifier
+        }
+
         Surface(
             modifier = modifier
                 .fillMaxWidth()
                 .scale(selectionScale)
-                .clip(surfaceShape)
-                .then(
-                    if (showSelectionDecoration) {
-                        Modifier.border(
-                            width = selectionBorderWidth,
-                            color = selectionBorderColor,
-                            shape = surfaceShape
-                        )
-                    } else {
-                        Modifier
-                    }
+                .rotaryFocusableItem(
+                    shape = surfaceShape,
+                    interactionSource = interactionSource,
+                    borderColor = Color.Transparent,
+                    onClick = {
+                        if (isSelectionMode) {
+                            onLongPress()
+                        } else {
+                            onClick()
+                        }
+                    },
+                    onLongPress = onLongPress
                 )
+                .clip(surfaceShape)
+                .then(itemBorderModifier)
                 .semantics(mergeDescendants = true) {
                     role = Role.Button
                     onClick {
@@ -395,6 +419,7 @@ fun EnhancedSongListItem(
                         modifier = Modifier
                             .size(36.dp)
                             .padding(end = 4.dp)
+                            .focusProperties { canFocus = false }
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.MoreVert,

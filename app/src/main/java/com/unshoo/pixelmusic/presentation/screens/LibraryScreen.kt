@@ -1,7 +1,10 @@
-﻿@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 
 package com.unshoo.pixelmusic.presentation.screens
 
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.unshoo.pixelmusic.presentation.navigation.navigateSafely
 import com.unshoo.pixelmusic.presentation.navigation.navigateSafelyReplacing
 
@@ -21,6 +24,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import android.view.ViewConfiguration
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import com.unshoo.pixelmusic.presentation.utils.rotaryFocusHighlight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -3039,23 +3052,44 @@ fun AlbumGridItemRedesigned(
             }
         }
     } else {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val longPressTimeout = remember(context) { ViewConfiguration.getLongPressTimeout().toLong() }
+        val cardInteractionSource = remember { MutableInteractionSource() }
+        val isFocused by cardInteractionSource.collectIsFocusedAsState()
+        val coroutineScope = rememberCoroutineScope()
+        var hardwareLongPressJob by remember { mutableStateOf<Job?>(null) }
+        var isHardwareLongPressHandled by remember { mutableStateOf(false) }
+
+        val cardBorderModifier = when {
+            isFocused -> Modifier.border(
+                width = 2.5.dp,
+                color = MaterialTheme.colorScheme.primary,
+                shape = cardShape
+            )
+            isSelected -> Modifier.border(
+                width = selectionBorderWidth,
+                color = MaterialTheme.colorScheme.tertiary,
+                shape = cardShape
+            )
+            else -> Modifier
+        }
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .scale(selectionScale)
-                .then(
-                    if (isSelected) {
-                        Modifier.border(
-                            width = selectionBorderWidth,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = cardShape
-                        )
-                    } else {
-                        Modifier
+                .then(cardBorderModifier)
+                .onFocusChanged { focusState ->
+                    if (!focusState.isFocused) {
+                        hardwareLongPressJob?.cancel()
+                        hardwareLongPressJob = null
+                        isHardwareLongPressHandled = false
                     }
-                )
+                }
                 .clip(cardShape)
                 .combinedClickable(
+                    interactionSource = cardInteractionSource,
+                    indication = androidx.compose.material3.ripple(),
                     onClick = {
                         if (isSelectionMode) {
                             onSelectionToggle()
@@ -3064,7 +3098,43 @@ fun AlbumGridItemRedesigned(
                         }
                     },
                     onLongClick = onLongPress
-                ),
+                )
+                .onKeyEvent { keyEvent ->
+                    val isCenterOrEnter = when (keyEvent.key) {
+                        Key.DirectionCenter,
+                        Key.Enter,
+                        Key.NumPadEnter,
+                        Key.Spacebar -> true
+                        else -> false
+                    }
+                    if (!isCenterOrEnter) return@onKeyEvent false
+
+                    when (keyEvent.type) {
+                        KeyEventType.KeyDown -> {
+                            if (keyEvent.nativeKeyEvent.repeatCount == 0) {
+                                isHardwareLongPressHandled = false
+                                hardwareLongPressJob?.cancel()
+                                hardwareLongPressJob = coroutineScope.launch {
+                                    delay(longPressTimeout)
+                                    isHardwareLongPressHandled = true
+                                    onLongPress()
+                                }
+                            }
+                            false // Let combinedClickable handle KeyDown for ripple
+                        }
+                        KeyEventType.KeyUp -> {
+                            hardwareLongPressJob?.cancel()
+                            hardwareLongPressJob = null
+                            if (isHardwareLongPressHandled) {
+                                isHardwareLongPressHandled = false
+                                true // Consume KeyUp so combinedClickable doesn't fire onClick
+                            } else {
+                                false // Let combinedClickable fire onClick
+                            }
+                        }
+                        else -> false
+                    }
+                },
             shape = cardShape,
             colors = CardDefaults.cardColors(containerColor = itemDesignColorScheme.surfaceVariant.copy(alpha = 0.3f))
         ) {
@@ -3372,24 +3442,45 @@ fun AlbumListItem(
             }
         }
     } else {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val longPressTimeout = remember(context) { ViewConfiguration.getLongPressTimeout().toLong() }
+        val cardInteractionSource = remember { MutableInteractionSource() }
+        val isFocused by cardInteractionSource.collectIsFocusedAsState()
+        val coroutineScope = rememberCoroutineScope()
+        var hardwareLongPressJob by remember { mutableStateOf<Job?>(null) }
+        var isHardwareLongPressHandled by remember { mutableStateOf(false) }
+
+        val cardBorderModifier = when {
+            isFocused -> Modifier.border(
+                width = 2.5.dp,
+                color = MaterialTheme.colorScheme.primary,
+                shape = cardShape
+            )
+            isSelected -> Modifier.border(
+                width = selectionBorderWidth,
+                color = MaterialTheme.colorScheme.tertiary,
+                shape = cardShape
+            )
+            else -> Modifier
+        }
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(88.dp)
                 .scale(selectionScale)
-                .then(
-                    if (isSelected) {
-                        Modifier.border(
-                            width = selectionBorderWidth,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = cardShape
-                        )
-                    } else {
-                        Modifier
+                .then(cardBorderModifier)
+                .onFocusChanged { focusState ->
+                    if (!focusState.isFocused) {
+                        hardwareLongPressJob?.cancel()
+                        hardwareLongPressJob = null
+                        isHardwareLongPressHandled = false
                     }
-                )
+                }
                 .clip(cardShape)
                 .combinedClickable(
+                    interactionSource = cardInteractionSource,
+                    indication = androidx.compose.material3.ripple(),
                     onClick = {
                         if (isSelectionMode) {
                             onSelectionToggle()
@@ -3398,7 +3489,43 @@ fun AlbumListItem(
                         }
                     },
                     onLongClick = onLongPress
-                ),
+                )
+                .onKeyEvent { keyEvent ->
+                    val isCenterOrEnter = when (keyEvent.key) {
+                        Key.DirectionCenter,
+                        Key.Enter,
+                        Key.NumPadEnter,
+                        Key.Spacebar -> true
+                        else -> false
+                    }
+                    if (!isCenterOrEnter) return@onKeyEvent false
+
+                    when (keyEvent.type) {
+                        KeyEventType.KeyDown -> {
+                            if (keyEvent.nativeKeyEvent.repeatCount == 0) {
+                                isHardwareLongPressHandled = false
+                                hardwareLongPressJob?.cancel()
+                                hardwareLongPressJob = coroutineScope.launch {
+                                    delay(longPressTimeout)
+                                    isHardwareLongPressHandled = true
+                                    onLongPress()
+                                }
+                            }
+                            false // Let combinedClickable handle KeyDown for ripple
+                        }
+                        KeyEventType.KeyUp -> {
+                            hardwareLongPressJob?.cancel()
+                            hardwareLongPressJob = null
+                            if (isHardwareLongPressHandled) {
+                                isHardwareLongPressHandled = false
+                                true // Consume KeyUp so combinedClickable doesn't fire onClick
+                            } else {
+                                false // Let combinedClickable fire onClick
+                            }
+                        }
+                        else -> false
+                    }
+                },
             shape = cardShape,
             colors = CardDefaults.cardColors(containerColor = itemDesignColorScheme.surfaceVariant.copy(alpha = 0.3f))
         ) {

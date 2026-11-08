@@ -12,7 +12,15 @@ import android.os.Bundle
 import com.unshoo.pixelmusic.BuildConfig
 import com.unshoo.pixelmusic.utils.traceSection
 import android.provider.Settings
+import android.view.InputDevice
+import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.WindowManager
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalFocusManager
+import com.unshoo.pixelmusic.presentation.utils.LocalRotaryController
+import com.unshoo.pixelmusic.presentation.utils.RegisterRotaryFocusManager
+import com.unshoo.pixelmusic.presentation.utils.RotaryNavigationController
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -195,6 +203,10 @@ class MainActivity : ComponentActivity() {
 
     private val requestAllFilesAccessLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
     }
+    private val rotaryController = RotaryNavigationController()
+    private var rotaryScrollAccumulator = 0f
+    private var consumedNavigateByRotary = false
+    private var consumedDpadByRotary = false
 
     @CallSuper
     override fun attachBaseContext(newBase: Context) {
@@ -360,55 +372,60 @@ class MainActivity : ComponentActivity() {
                 darkTheme = useDarkTheme,
                 colorSchemePairOverride = appWideNowPlayingScheme
             ) {
-                var contentVisible by remember { mutableStateOf(false) }
-                val contentAlpha by animateFloatAsState(
-                    targetValue = if (contentVisible) 1f else 0f,
-                    animationSpec = tween(600, easing = LinearOutSlowInEasing),
-                    label = "AppContentAlpha"
-                )
-
-                LaunchedEffect(Unit) {
-                    delay(100)
-                    contentVisible = true
-                }
-
-                Surface(
-                    modifier = Modifier.fillMaxSize().graphicsLayer { alpha = contentAlpha }, 
-                    color = MaterialTheme.colorScheme.background
+                CompositionLocalProvider(
+                    LocalRotaryController provides rotaryController
                 ) {
-                    if (showSetupScreen == null) {
-                        SetupGateLoadingScreen()
-                    } else {
-                        AnimatedContent(
-                            targetState = showSetupScreen,
-                            transitionSpec = {
-                                if (targetState) {
-                                    fadeIn(animationSpec = tween(400)) togetherWith fadeOut(animationSpec = tween(400))
-                                } else {
-                                    scaleIn(initialScale = 0.95f, animationSpec = tween(450)) + fadeIn(animationSpec = tween(450)) togetherWith
-                                            slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(450)) + fadeOut(animationSpec = tween(450))
-                                }
-                            },
-                            label = "SetupTransition"
-                        ) { shouldShowSetup ->
-                            if (shouldShowSetup) {
-                                SetupScreen(onSetupComplete = {
-                                })
-                            } else {
-                                MainAppContent(playerViewModel, mainViewModel)
-                            }
-                        }
+                    RegisterRotaryFocusManager()
+                    var contentVisible by remember { mutableStateOf(false) }
+                    val contentAlpha by animateFloatAsState(
+                        targetValue = if (contentVisible) 1f else 0f,
+                        animationSpec = tween(600, easing = LinearOutSlowInEasing),
+                        label = "AppContentAlpha"
+                    )
+
+                    LaunchedEffect(Unit) {
+                        delay(100)
+                        contentVisible = true
                     }
 
-                    if (showCrashReportDialog && crashLogData != null) {
-                        CrashReportDialog(
-                            crashLog = crashLogData!!,
-                            onDismiss = {
-                                CrashHandler.clearCrashLog()
-                                crashLogData = null
-                                showCrashReportDialog = false
+                    Surface(
+                        modifier = Modifier.fillMaxSize().graphicsLayer { alpha = contentAlpha }, 
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        if (showSetupScreen == null) {
+                            SetupGateLoadingScreen()
+                        } else {
+                            AnimatedContent(
+                                targetState = showSetupScreen,
+                                transitionSpec = {
+                                    if (targetState) {
+                                        fadeIn(animationSpec = tween(400)) togetherWith fadeOut(animationSpec = tween(400))
+                                    } else {
+                                        scaleIn(initialScale = 0.95f, animationSpec = tween(450)) + fadeIn(animationSpec = tween(450)) togetherWith
+                                                slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(450)) + fadeOut(animationSpec = tween(450))
+                                    }
+                                },
+                                label = "SetupTransition"
+                            ) { shouldShowSetup ->
+                                if (shouldShowSetup) {
+                                    SetupScreen(onSetupComplete = {
+                                    })
+                                } else {
+                                    MainAppContent(playerViewModel, mainViewModel)
+                                }
                             }
-                        )
+                        }
+
+                        if (showCrashReportDialog && crashLogData != null) {
+                            CrashReportDialog(
+                                crashLog = crashLogData!!,
+                                onDismiss = {
+                                    CrashHandler.clearCrashLog()
+                                    crashLogData = null
+                                    showCrashReportDialog = false
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -1135,7 +1152,91 @@ class MainActivity : ComponentActivity() {
         super.onResume()
     }
 
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_NAVIGATE_NEXT,
+            KeyEvent.KEYCODE_NAVIGATE_PREVIOUS -> {
+                val clockwise = event.keyCode == KeyEvent.KEYCODE_NAVIGATE_NEXT
+                when (event.action) {
+                    KeyEvent.ACTION_DOWN -> {
+                        if (event.repeatCount == 0) {
+                            consumedNavigateByRotary = rotaryController.onRotate(clockwise)
+                        } else if (consumedNavigateByRotary) {
+                            rotaryController.onRotate(clockwise)
+                        }
+                        if (consumedNavigateByRotary) return true
+                        return super.dispatchKeyEvent(event)
+                    }
+                    KeyEvent.ACTION_UP -> {
+                        if (consumedNavigateByRotary) {
+                            consumedNavigateByRotary = false
+                            return true
+                        }
+                        return super.dispatchKeyEvent(event)
+                    }
+                }
+            }
+            KeyEvent.KEYCODE_DPAD_UP,
+            KeyEvent.KEYCODE_DPAD_DOWN,
+            KeyEvent.KEYCODE_DPAD_LEFT,
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                when (event.action) {
+                    KeyEvent.ACTION_DOWN -> {
+                        if (event.repeatCount == 0) {
+                            val handledBySuper = super.dispatchKeyEvent(event)
+                            if (handledBySuper) {
+                                consumedDpadByRotary = false
+                                return true
+                            }
+                            consumedDpadByRotary = rotaryController.onNudge(event.keyCode)
+                            return consumedDpadByRotary
+                        } else if (consumedDpadByRotary) {
+                            return rotaryController.onNudge(event.keyCode)
+                        }
+                        return super.dispatchKeyEvent(event)
+                    }
+                    KeyEvent.ACTION_UP -> {
+                        if (consumedDpadByRotary) {
+                            consumedDpadByRotary = false
+                            return true
+                        }
+                        return super.dispatchKeyEvent(event)
+                    }
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
 
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_SCROLL &&
+            event.isFromSource(InputDevice.SOURCE_ROTARY_ENCODER)
+        ) {
+            val axisValue = event.getAxisValue(MotionEvent.AXIS_SCROLL).takeIf { it != 0f }
+                ?: event.getAxisValue(48 /* AXIS_ROTARY_ENCODER */)
+            if (axisValue != 0f) {
+                // In Android MotionEvent, scrolling down is negative.
+                // Subtracting axisValue ensures clockwise rotation (scrolling down) yields positive steps.
+                rotaryScrollAccumulator -= axisValue
+                if (kotlin.math.abs(rotaryScrollAccumulator) >= 1f) {
+                    val steps = rotaryScrollAccumulator.toInt()
+                    rotaryScrollAccumulator -= steps
+                    val clockwise = steps > 0
+                    val clampedSteps = kotlin.math.min(kotlin.math.abs(steps), 3)
+                    var handled = false
+                    for (i in 0 until clampedSteps) {
+                        if (rotaryController.onRotate(clockwise)) {
+                            handled = true
+                        } else {
+                            break
+                        }
+                    }
+                    if (handled) return true
+                }
+            }
+        }
+        return super.dispatchGenericMotionEvent(event)
+    }
 }
 
 /**

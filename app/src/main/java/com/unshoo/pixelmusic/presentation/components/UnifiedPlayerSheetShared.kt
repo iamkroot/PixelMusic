@@ -1,4 +1,4 @@
-﻿@file:kotlin.OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@file:kotlin.OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 
 package com.unshoo.pixelmusic.presentation.components
 
@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import coil.size.Size
 import com.unshoo.pixelmusic.R
 import com.unshoo.pixelmusic.data.model.Song
+import com.unshoo.pixelmusic.presentation.utils.rotaryFocusHighlight
 import com.unshoo.pixelmusic.ui.theme.RoundedSans
 
 internal val LocalMaterialTheme = staticCompositionLocalOf<ColorScheme> { error("No ColorScheme provided") }
@@ -160,7 +161,11 @@ internal fun MiniPlayerContentInternal(
                 ) {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onPrevious()
-                },
+                }
+                .rotaryFocusHighlight(
+                    shape = CircleShape,
+                    interactionSource = previousInteraction
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -190,7 +195,11 @@ internal fun MiniPlayerContentInternal(
                 ) {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onPlayPause()
-                },
+                }
+                .rotaryFocusHighlight(
+                    shape = RoundedCornerShape(playPauseCorner),
+                    interactionSource = playPauseInteraction
+                ),
             contentAlignment = Alignment.Center
         ) {
             MorphingPlayPauseIcon(
@@ -211,7 +220,11 @@ internal fun MiniPlayerContentInternal(
                     interactionSource = nextInteraction,
                     indication = miniPlayerIndication,
                     enabled = controlsEnabled
-                ) { onNext() },
+                ) { onNext() }
+                .rotaryFocusHighlight(
+                    shape = CircleShape,
+                    interactionSource = nextInteraction
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(

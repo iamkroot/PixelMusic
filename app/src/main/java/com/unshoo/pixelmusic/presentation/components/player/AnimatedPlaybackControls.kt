@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.presentation.components.player
+package com.unshoo.pixelmusic.presentation.components.player
 
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -7,6 +7,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.unshoo.pixelmusic.presentation.utils.rotaryFocusHighlight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -128,6 +130,10 @@ fun AnimatedPlaybackControls(
                 else -> compressionWeight
             }
 
+            val prevInteraction = remember { MutableInteractionSource() }
+            val playInteraction = remember { MutableInteractionSource() }
+            val nextInteraction = remember { MutableInteractionSource() }
+
             val prevWeight by animateFloatAsState(
                 targetValue = weightFor(PlaybackButtonType.PREVIOUS),
                 animationSpec = pressAnimationSpec,
@@ -139,10 +145,17 @@ fun AnimatedPlaybackControls(
                     .fillMaxHeight()
                     .clip(CircleShape)
                     .background(colorPreviousButton)
-                    .clickable {
+                    .clickable(
+                        interactionSource = prevInteraction,
+                        indication = androidx.compose.material3.ripple()
+                    ) {
                         lastClicked = PlaybackButtonType.PREVIOUS
                         onPrevious()
-                    },
+                    }
+                    .rotaryFocusHighlight(
+                        shape = CircleShape,
+                        interactionSource = prevInteraction
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -179,11 +192,18 @@ fun AnimatedPlaybackControls(
                     .fillMaxHeight()
                     .clip(playShape)
                     .background(colorPlayPause)
-                    .clickable {
+                    .clickable(
+                        interactionSource = playInteraction,
+                        indication = androidx.compose.material3.ripple()
+                    ) {
                         lastClicked = PlaybackButtonType.PLAY_PAUSE
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onPlayPause()
-                    },
+                    }
+                    .rotaryFocusHighlight(
+                        shape = playShape,
+                        interactionSource = playInteraction
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 MorphingPlayPauseIcon(
@@ -204,10 +224,17 @@ fun AnimatedPlaybackControls(
                     .fillMaxHeight()
                     .clip(CircleShape)
                     .background(colorNextButton)
-                    .clickable {
+                    .clickable(
+                        interactionSource = nextInteraction,
+                        indication = androidx.compose.material3.ripple()
+                    ) {
                         lastClicked = PlaybackButtonType.NEXT
                         onNext()
-                    },
+                    }
+                    .rotaryFocusHighlight(
+                        shape = CircleShape,
+                        interactionSource = nextInteraction
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

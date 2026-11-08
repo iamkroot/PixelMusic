@@ -1,4 +1,4 @@
-﻿package com.unshoo.pixelmusic.presentation.components.scoped
+package com.unshoo.pixelmusic.presentation.components.scoped
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.CubicBezierEasing
@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.unshoo.pixelmusic.presentation.utils.rotaryFocusHighlight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -100,6 +101,11 @@ fun RowScope.CustomNavigationBarItem(
         modifier = modifier
             .weight(1f)
             .fillMaxHeight()
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+            .rotaryFocusHighlight(
+                shape = RoundedCornerShape(16.dp),
+                interactionSource = interactionSource
+            )
             .clickable(
                 onClick = onClick,
                 enabled = enabled,

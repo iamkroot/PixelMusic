@@ -1,9 +1,11 @@
-﻿package com.unshoo.pixelmusic.presentation.components
+package com.unshoo.pixelmusic.presentation.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.unshoo.pixelmusic.presentation.utils.rotaryFocusHighlight
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -283,6 +285,7 @@ private fun RecentlyPlayedPill(
     )
     val shape = RoundedCornerShape(animatedCorner)
     val artStartPadding = (HomeRecentlyPlayedPillHeight - HomeRecentlyPlayedPillArtSize) / 2
+    val pillInteraction = remember { MutableInteractionSource() }
 
     Card(
         shape = shape,
@@ -291,7 +294,15 @@ private fun RecentlyPlayedPill(
         modifier = modifier
             .height(HomeRecentlyPlayedPillHeight)
             .clip(shape)
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = pillInteraction,
+                indication = androidx.compose.material3.ripple(),
+                onClick = onClick
+            )
+            .rotaryFocusHighlight(
+                shape = shape,
+                interactionSource = pillInteraction
+            )
     ) {
         Row(
             modifier = Modifier

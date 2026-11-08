@@ -1,9 +1,13 @@
-﻿package com.unshoo.pixelmusic.presentation.components
+package com.unshoo.pixelmusic.presentation.components
 
 import android.os.SystemClock
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.unshoo.pixelmusic.presentation.utils.rotaryFocusHighlight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
@@ -99,10 +103,18 @@ fun PlayerNavigationRail(
                     }
                 }
             }
+            val railInteractionSource = remember { MutableInteractionSource() }
             NavigationRailItem(
                 selected = isSelected,
                 onClick = onClickLambda,
                 enabled = currentRoute != null,
+                interactionSource = railInteractionSource,
+                modifier = Modifier
+                    .padding(horizontal = 6.dp)
+                    .rotaryFocusHighlight(
+                        shape = RoundedCornerShape(16.dp),
+                        interactionSource = railInteractionSource
+                    ),
                 icon = {
                     Icon(
                         painter = painterResource(id = iconPainterResId),

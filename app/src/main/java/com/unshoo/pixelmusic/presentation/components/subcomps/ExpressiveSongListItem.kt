@@ -1,6 +1,8 @@
-﻿package com.unshoo.pixelmusic.presentation.components.subcomps
+package com.unshoo.pixelmusic.presentation.components.subcomps
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.unshoo.pixelmusic.presentation.utils.rotaryFocusHighlight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,10 +45,19 @@ fun ExpressiveSongListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val itemShape = androidx.compose.runtime.remember { AbsoluteSmoothCornerShape(14.dp, 60) }
+    val interactionSource = androidx.compose.runtime.remember { MutableInteractionSource() }
     Surface(
         onClick = onClick,
+        interactionSource = interactionSource,
         color = Color.Transparent,
-        modifier = modifier.fillMaxWidth()
+        shape = itemShape,
+        modifier = modifier
+            .fillMaxWidth()
+            .rotaryFocusHighlight(
+                shape = itemShape,
+                interactionSource = interactionSource
+            )
     ) {
         Row(
             modifier = Modifier
