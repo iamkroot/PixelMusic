@@ -123,6 +123,8 @@ android {
     defaultConfig {
         applicationId = localProperties.getProperty("APPLICATION_ID")?.trim()
             ?: (project.findProperty("APPLICATION_ID") as? String)?.trim()
+            ?: System.getenv("PACKAGE_NAME")?.trim()
+            ?: System.getenv("APPLICATION_ID")?.trim()
             ?: (if (isVivoBuild) "com.netease.cloudmusic" else "dev.kroot.pixelmusic")
         minSdk = 30
         targetSdk = 37
