@@ -106,6 +106,7 @@ data class SettingsUiState(
     val hiFiModeDeviceSupported: Boolean = true,
     val crossfadeDuration: Int = 2000,
     val persistentShuffleEnabled: Boolean = false,
+    val aaosCallNavRoutingEnabled: Boolean = false,
     val folderBackGestureNavigation: Boolean = true,
     val lyricsSourcePreference: LyricsSourcePreference = LyricsSourcePreference.EMBEDDED_FIRST,
     val autoScanLrcFiles: Boolean = false,
@@ -698,6 +699,12 @@ class SettingsViewModel @Inject constructor(
             }
         }
         
+        viewModelScope.launch {
+            userPreferencesRepository.aaosCallNavRoutingEnabledFlow.collect { enabled ->
+                _uiState.update { it.copy(aaosCallNavRoutingEnabled = enabled) }
+            }
+        }
+
         // Group 2: Playback and system settings
         viewModelScope.launch {
             combine<Any?, SettingsUiUpdate.Group2>(
@@ -1579,6 +1586,12 @@ fun setBeta05CleanInstallDisclaimerDismissed(dismissed: Boolean) {
     fun setPersistentShuffleEnabled(enabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.setPersistentShuffleEnabled(enabled)
+        }
+    }
+
+    fun setAaosCallNavRoutingEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setAaosCallNavRoutingEnabled(enabled)
         }
     }
 

@@ -231,6 +231,8 @@
     <string name="setcat_hifi_mode_subtitle_unsupported">Not supported on this device (PCM_FLOAT AudioTrack unavailable).</string>
     <string name="setcat_persistent_shuffle_title">Persistent Shuffle</string>
     <string name="setcat_persistent_shuffle_subtitle">Remember shuffle setting even after closing the app.</string>
+    <string name="setcat_aaos_call_nav_routing_title">Keep Playing During Calls (AAOS)</string>
+    <string name="setcat_aaos_call_nav_routing_subtitle">Reroutes audio through the navigation channel during phone calls so Android Automotive does not mute playback. Note: Volume will be governed by vehicle navigation volume.</string>
     <string name="setcat_show_queue_history_title">Show queue history</string>
     <string name="setcat_show_queue_history_subtitle">Show previously played songs in the queue.</string>
 

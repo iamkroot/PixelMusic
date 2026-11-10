@@ -300,6 +300,7 @@ constructor(
         val PERSISTENT_SHUFFLE_ENABLED = booleanPreferencesKey("persistent_shuffle_enabled")
         val DISABLE_CAST_AUTOPLAY = booleanPreferencesKey("disable_cast_autoplay")
         val RESUME_ON_HEADSET_RECONNECT = booleanPreferencesKey("resume_on_headset_reconnect")
+        val AAOS_CALL_NAV_ROUTING = booleanPreferencesKey("aaos_call_nav_routing_enabled")
         val DYNAMIC_ISLAND_ENABLED = booleanPreferencesKey("dynamic_island_enabled")
         val SHOW_QUEUE_HISTORY = booleanPreferencesKey("show_queue_history")
         val PLAYBACK_QUEUE_SNAPSHOT = stringPreferencesKey("playback_queue_snapshot_v1")
@@ -1467,6 +1468,11 @@ constructor(
                 preferences[PreferencesKeys.RESUME_ON_HEADSET_RECONNECT] ?: false
             }
 
+    val aaosCallNavRoutingEnabledFlow: Flow<Boolean> =
+            dataStore.data.map { preferences ->
+                preferences[PreferencesKeys.AAOS_CALL_NAV_ROUTING] ?: false
+            }.distinctUntilChanged()
+
     val dynamicIslandEnabledFlow: Flow<Boolean> =
             dataStore.data.map { preferences ->
                 preferences[PreferencesKeys.DYNAMIC_ISLAND_ENABLED] ?: false
@@ -1990,6 +1996,12 @@ constructor(
     suspend fun setResumeOnHeadsetReconnect(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.RESUME_ON_HEADSET_RECONNECT] = enabled
+        }
+    }
+
+    suspend fun setAaosCallNavRoutingEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.AAOS_CALL_NAV_ROUTING] = enabled
         }
     }
 

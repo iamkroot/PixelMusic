@@ -55,6 +55,7 @@ import com.unshoo.pixelmusic.MainActivity
 import com.unshoo.pixelmusic.presentation.utils.AppIconManager
 import com.unshoo.pixelmusic.R
 import com.unshoo.pixelmusic.data.model.PlayerInfo
+import com.unshoo.pixelmusic.data.model.Song
 import com.unshoo.pixelmusic.data.model.PlaybackQueueItemSnapshot
 import com.unshoo.pixelmusic.data.model.PlaybackQueueSnapshot
 import com.unshoo.pixelmusic.data.preferences.EqualizerPreferencesRepository
@@ -697,6 +698,12 @@ class MusicService : MediaLibraryService() {
         serviceScope.launch {
             userPreferencesRepository.hiFiModeEnabledFlow.collect { enabled ->
                 engine.setHiFiMode(enabled)
+            }
+        }
+
+        serviceScope.launch {
+            userPreferencesRepository.aaosCallNavRoutingEnabledFlow.collect { enabled ->
+                engine.setCallNavBypassEnabled(enabled)
             }
         }
 
