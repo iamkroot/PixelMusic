@@ -149,6 +149,11 @@ class CarLibraryTree @Inject constructor(
         }
     }
 
+    fun findSongInCache(mediaId: String): Song? {
+        val bareId = songIdOf(mediaId)
+        return songCache[bareId] ?: songCache[mediaId]
+    }
+
     suspend fun findSong(mediaId: String): Song? {
         val bareId = songIdOf(mediaId)
         songCache[bareId]?.let { return it }
