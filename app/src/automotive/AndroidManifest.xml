@@ -13,6 +13,9 @@
 
     <application>
         <meta-data
+            android:name="com.google.android.gms.car.application"
+            tools:node="remove" />
+        <meta-data
             android:name="com.android.automotive"
             android:resource="@xml/automotive_app_desc" />
         <meta-data
