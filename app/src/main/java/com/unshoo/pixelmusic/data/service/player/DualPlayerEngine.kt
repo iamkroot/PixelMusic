@@ -80,6 +80,18 @@ data class ActiveDecoderInfo(
     val isHardware: Boolean
 )
 
+internal fun computeCallBypassDuckedVolume(originalVolume: Float): Float {
+    return (originalVolume.coerceIn(0f, 1f) * 0.25f).coerceIn(0f, 0.4f)
+}
+
+internal fun shouldBypassTransientAudioFocusLoss(
+    bypassEnabled: Boolean,
+    isNavBypassActive: Boolean,
+    isCallActive: Boolean
+): Boolean {
+    return bypassEnabled && (isNavBypassActive || isCallActive)
+}
+
 /**
  * Manages two ExoPlayer instances (A and B) to enable seamless transitions.
  *
@@ -296,6 +308,137 @@ class DualPlayerEngine @Inject constructor(
      */
     var incomingTrackReplayGainVolume: Float? = null
 
+    private val mediaAudioAttributesMedia3 = Media3AudioAttributes.Builder()
+        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+        .setUsage(C.USAGE_MEDIA)
+        .build()
+
+    private val navAudioAttributesMedia3 = Media3AudioAttributes.Builder()
+        .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
+        .setUsage(C.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+        .build()
+
+    private val mediaAudioAttributesAndroid = android.media.AudioAttributes.Builder()
+        .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+        .build()
+
+    private val navAudioAttributesAndroid = android.media.AudioAttributes.Builder()
+        .setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+        .build()
+
+    private var isNavBypassActive = false
+    private var navFocusRequest: AudioFocusRequest? = null
+    private var preBypassVolume: Float = 1f
+    var callNavBypassEnabled: Boolean = false
+        private set
+
+    val isCallNavBypassActive: Boolean
+        get() = isNavBypassActive
+
+    private var callAudioBypassManager: CallAudioBypassManager? = null
+
+    private val navFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        Timber.tag("DualPlayerEngine").d("Nav AudioFocus change: %d", focusChange)
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                Timber.tag("DualPlayerEngine").d("Nav AudioFocus LOSS. Pausing.")
+                if (isNavBypassActive && ::playerA.isInitialized) {
+                    playerA.playWhenReady = false
+                    if (::playerB.isInitialized) playerB.playWhenReady = false
+                }
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                Timber.tag("DualPlayerEngine").d("Nav AudioFocus GAIN.")
+                if (isNavBypassActive && ::playerA.isInitialized) {
+                    playerA.playWhenReady = true
+                }
+            }
+        }
+    }
+
+    private fun requestNavAudioFocus() {
+        if (navFocusRequest != null) return
+        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            .setAudioAttributes(navAudioAttributesAndroid)
+            .setOnAudioFocusChangeListener(navFocusChangeListener)
+            .setAcceptsDelayedFocusGain(false)
+            .build()
+        val result = audioManager.requestAudioFocus(request)
+        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            navFocusRequest = request
+            Timber.tag("DualPlayerEngine").d("Nav AudioFocus granted for call bypass")
+        } else {
+            Timber.tag("DualPlayerEngine").w("Nav AudioFocus request result: %d", result)
+        }
+    }
+
+    private fun abandonNavAudioFocus() {
+        navFocusRequest?.let {
+            audioManager.abandonAudioFocusRequest(it)
+            navFocusRequest = null
+        }
+    }
+
+    fun activateCallNavBypass() {
+        if (!callNavBypassEnabled) return
+        if (isNavBypassActive) return
+
+        val wasActive = (::playerA.isInitialized && (playerA.playWhenReady || playerA.isPlaying)) || isFocusLossPause
+        if (!wasActive) {
+            Timber.tag("DualPlayerEngine").d("Call started but player was not active; skipping nav bypass")
+            return
+        }
+
+        Timber.tag("DualPlayerEngine").i("Activating AAOS Nav channel bypass for call")
+        isNavBypassActive = true
+        isFocusLossPause = false
+
+        if (::playerA.isInitialized) {
+            preBypassVolume = playerA.volume.coerceIn(0f, 1f)
+            val duckedVolume = computeCallBypassDuckedVolume(preBypassVolume)
+            playerA.setAudioAttributes(navAudioAttributesMedia3, false)
+            playerA.volume = duckedVolume
+            playerA.playWhenReady = true
+        }
+        if (::playerB.isInitialized) {
+            playerB.setAudioAttributes(navAudioAttributesMedia3, false)
+            playerB.volume = computeCallBypassDuckedVolume(preBypassVolume)
+        }
+
+        requestNavAudioFocus()
+    }
+
+    fun deactivateCallNavBypass() {
+        if (!isNavBypassActive) return
+        Timber.tag("DualPlayerEngine").i("Deactivating AAOS Nav channel bypass (call ended)")
+        isNavBypassActive = false
+
+        abandonNavAudioFocus()
+
+        if (::playerA.isInitialized) {
+            playerA.setAudioAttributes(mediaAudioAttributesMedia3, false)
+            playerA.volume = preBypassVolume
+        }
+        if (::playerB.isInitialized) {
+            playerB.setAudioAttributes(mediaAudioAttributesMedia3, false)
+            playerB.volume = preBypassVolume
+        }
+
+        if (::playerA.isInitialized && (playerA.playWhenReady || playerA.isPlaying)) {
+            requestAudioFocus()
+        }
+    }
+
+    fun setCallNavBypassEnabled(enabled: Boolean) {
+        if (callNavBypassEnabled == enabled) return
+        callNavBypassEnabled = enabled
+        if (!enabled && isNavBypassActive) {
+            deactivateCallNavBypass()
+        }
+    }
+
     private val focusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         if (isReleased || !::playerA.isInitialized || audioFocusRequest == null) return@OnAudioFocusChangeListener
         when (focusChange) {
@@ -309,6 +452,11 @@ class DualPlayerEngine @Inject constructor(
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 Timber.tag("TransitionDebug").d("AudioFocus LOSS_TRANSIENT (%d). Pausing.", focusChange)
+                if (shouldBypassTransientAudioFocusLoss(callNavBypassEnabled, isNavBypassActive, callAudioBypassManager?.isCallActiveImmediate() == true)) {
+                    Timber.tag("TransitionDebug").d("AudioFocus LOSS_TRANSIENT ignored; activating call nav bypass.")
+                    activateCallNavBypass()
+                    return@OnAudioFocusChangeListener
+                }
                 // Only latch "resume on GAIN" from the first transient loss; a second
                 // LOSS_TRANSIENT while already paused must not clear the flag.
                 isFocusLossPause = isFocusLossPause ||
@@ -330,6 +478,9 @@ class DualPlayerEngine @Inject constructor(
             }
             AudioManager.AUDIOFOCUS_GAIN -> {
                 Timber.tag("TransitionDebug").d("AudioFocus GAIN. Restoring volume and resuming if paused.")
+                if (isNavBypassActive) {
+                    return@OnAudioFocusChangeListener
+                }
                 clearDucking()
                 if (isFocusLossPause) {
                     isFocusLossPause = false
@@ -362,7 +513,11 @@ class DualPlayerEngine @Inject constructor(
             if (playWhenReady) {
                 pausedAtOverlapBoundary = false
                 lastPlayWhenReadyAtMs = SystemClock.elapsedRealtime()
-                requestAudioFocus()
+                if (isNavBypassActive) {
+                    requestNavAudioFocus()
+                } else {
+                    requestAudioFocus()
+                }
                 checkAndRecoverStalePlaybackOnResume()
             } else {
                 if (transitionRunning) {
@@ -1446,6 +1601,20 @@ class DualPlayerEngine @Inject constructor(
             startPreferenceCollectors()
         }
 
+        if (callAudioBypassManager == null) {
+            callAudioBypassManager = CallAudioBypassManager(
+                context = context,
+                scope = scope,
+                onCallStateChanged = { isCallActive ->
+                    if (isCallActive) {
+                        activateCallNavBypass()
+                    } else {
+                        deactivateCallNavBypass()
+                    }
+                }
+            ).apply { start() }
+        }
+
         if (::playerA.isInitialized) {
             onPlayerAboutToBeReleasedListener?.invoke(playerA)
             try { playerA.release() } catch (e: Exception) { /* Ignore */ }
@@ -1825,10 +1994,7 @@ class DualPlayerEngine @Inject constructor(
          .setEnableDecoderFallback(true)
          .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
 
-        val audioAttributes = Media3AudioAttributes.Builder()
-            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-            .setUsage(C.USAGE_MEDIA)
-            .build()
+        val audioAttributes = if (isNavBypassActive) navAudioAttributesMedia3 else mediaAudioAttributesMedia3
             
         val resolver = object : ResolvingDataSource.Resolver {
             override fun resolveDataSpec(dataSpec: DataSpec): DataSpec {
@@ -2938,7 +3104,11 @@ class DualPlayerEngine @Inject constructor(
             } catch (e: Exception) { /* Ignore */ }
         }
         if (::playerA.isInitialized) {
-            restoreMasterRestVolume(playerA)
+            if (isNavBypassActive) {
+                playerA.volume = computeCallBypassDuckedVolume(preBypassVolume)
+            } else {
+                restoreMasterRestVolume(playerA)
+            }
         }
         incomingTrackReplayGainVolume = null
         setPauseAtEndOfMediaItems(false)
@@ -3052,7 +3222,11 @@ class DualPlayerEngine @Inject constructor(
 
         val outgoingStartVolume = if (isDucked) preDuckVolumeA else outgoingPlayer.volume
         transitionOutgoingRestVolume = outgoingStartVolume
-        val incomingTargetVolume = incomingTrackReplayGainVolume ?: outgoingStartVolume
+        val incomingTargetVolume = if (isNavBypassActive) {
+            computeCallBypassDuckedVolume(preBypassVolume)
+        } else {
+            incomingTrackReplayGainVolume ?: outgoingStartVolume
+        }
         val incomingBeforeStart = incomingPlayer.currentPosition
 
         incomingPlayer.volume = 0f
@@ -3186,7 +3360,9 @@ class DualPlayerEngine @Inject constructor(
         if (playerA.volume <= 0.01f) {
             playerA.volume = if (isDucked) incomingTargetVolume * DUCK_FACTOR else incomingTargetVolume
         }
-        if (playerA.playWhenReady) requestAudioFocus()
+        if (playerA.playWhenReady) {
+            if (isNavBypassActive) requestNavAudioFocus() else requestAudioFocus()
+        }
 
         onPlayerSwappedListeners.forEach { it(playerA) }
         _activeAudioSessionId.value = playerA.audioSessionId
@@ -3224,6 +3400,10 @@ class DualPlayerEngine @Inject constructor(
 
     private fun restoreMasterRestVolume(player: ExoPlayer) {
         if (skipFadeActive && player === playerA) return
+        if (isNavBypassActive) {
+            player.volume = computeCallBypassDuckedVolume(preBypassVolume)
+            return
+        }
         val base = transitionOutgoingRestVolume ?: return
         transitionOutgoingRestVolume = null
         if (isDucked) {
@@ -3363,8 +3543,12 @@ class DualPlayerEngine @Inject constructor(
         preResolutionJob?.cancel()
         cancelAudioOffloadFallback()
         cancelPreCacheJobs()
+        callAudioBypassManager?.stop()
+        callAudioBypassManager = null
+        deactivateCallNavBypass()
         scope.coroutineContext[Job]?.cancel()
         abandonAudioFocus()
+        abandonNavAudioFocus()
         isDucked = false
         isFocusLossPause = false
         if (::playerA.isInitialized) {
