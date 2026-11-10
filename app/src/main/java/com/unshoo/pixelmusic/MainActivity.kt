@@ -7,6 +7,8 @@ import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.view.WindowManager
 import com.unshoo.pixelmusic.presentation.utils.AppIconManager
 import android.os.Build
 import android.os.Bundle
@@ -251,16 +253,24 @@ class MainActivity : ComponentActivity() {
         setTheme(activeIcon.splashThemeRes)
         val splashScreen = installSplashScreen()
         AppIconManager.updateTaskDescription(this, activeIcon)
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
-            ),
-            navigationBarStyle = SystemBarStyle.auto(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
+        val isAutomotive = packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) ||
+            BuildConfig.DEVICE == "automotive"
+        if (!isAutomotive) {
+            enableEdgeToEdge(
+                statusBarStyle = SystemBarStyle.auto(
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT
+                ),
+                navigationBarStyle = SystemBarStyle.auto(
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT
+                )
             )
-        )
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && isAutomotive) {
+            window.attributes.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isStatusBarContrastEnforced = false
             window.isNavigationBarContrastEnforced = false

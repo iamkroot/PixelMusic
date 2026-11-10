@@ -353,6 +353,8 @@ object MediaItemBuilder {
             .setTitle(song.title)
             .setArtist(song.displayArtist)
             .setAlbumTitle(song.album)
+            .setIsPlayable(true)
+            .setIsBrowsable(false)
             .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
 
         exposedArtworkUri?.let { artworkUri ->

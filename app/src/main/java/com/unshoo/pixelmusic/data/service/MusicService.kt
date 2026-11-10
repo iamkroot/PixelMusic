@@ -3920,10 +3920,31 @@ class MusicService : MediaLibraryService() {
     ): TrustedMediaItemsResolution {
         // Rows browsed in the car carry a `song:` prefix so their ids parse back
         // unambiguously; the database wants the bare id.
-        val songIds = requestedItems.map { CarLibraryTree.songIdOf(it.mediaId) }
-        val songMap = songIds.distinct().mapNotNull { id ->
-            carLibraryTree.findSong(id)?.let { id to it }
-        }.toMap()
+        val songIds = requestedItems.map { CarLibraryTree.songIdOf(it.mediaId) }.distinct()
+        val songMap = mutableMapOf<String, Song>()
+        val unresolvedIds = mutableListOf<String>()
+
+        for (id in songIds) {
+            val cached = carLibraryTree.findSongInCache(id)
+            if (cached != null) {
+                songMap[id] = cached
+            } else {
+                unresolvedIds.add(id)
+            }
+        }
+
+        if (unresolvedIds.isNotEmpty()) {
+            unresolvedIds.chunked(900).forEach { chunk ->
+                musicRepository.getSongsByIdsOnce(chunk).forEach { song ->
+                    carLibraryTree.rememberSong(song)
+                    songMap[song.id] = song
+                }
+            }
+            val remainingIds = unresolvedIds.filter { it !in songMap }
+            for (id in remainingIds) {
+                carLibraryTree.findSong(id)?.let { songMap[id] = it }
+            }
+        }
 
         return resolveMediaItemsWithTrustedArtworkGrants(requestedItems) { mediaId ->
             val bareId = CarLibraryTree.songIdOf(mediaId)
