@@ -2,8 +2,11 @@ package com.unshoo.pixelmusic.presentation.components.player
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
+import androidx.compose.ui.res.stringResource
+import com.unshoo.pixelmusic.BuildConfig
 import com.unshoo.pixelmusic.presentation.components.AudioFormatInfoDialog
 import com.unshoo.pixelmusic.data.model.Lyrics
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -355,6 +358,7 @@ internal fun ClassicFullPlayerContent(
 
     val playerConfig by playerViewModel.playerConfigSlice.collectAsStateWithLifecycle()
     val isGradientTheme = playerConfig.playerBackgroundStyle == com.unshoo.pixelmusic.data.preferences.PlayerBackgroundStyle.GRADIENT
+    val isAaosCallNavRoutingEnabled by playerViewModel.aaosCallNavRoutingEnabled.collectAsStateWithLifecycle()
 
     var showFetchLyricsDialog by remember { mutableStateOf(false) }
     var totalDrag by remember { mutableStateOf(0f) }
@@ -671,7 +675,9 @@ internal fun ClassicFullPlayerContent(
             onShuffleToggle = onShuffleToggle,
             onRepeatToggle = onRepeatToggle,
             onFavoriteToggle = onFavoriteToggle,
-            isGradientTheme = isGradientTheme
+            isGradientTheme = isGradientTheme,
+            isAaosCallNavRoutingEnabled = isAaosCallNavRoutingEnabled,
+            onAaosCallNavRoutingToggle = { playerViewModel.toggleAaosCallNavRouting() }
         )
     }
 
@@ -1867,7 +1873,9 @@ private fun FullPlayerControlsSection(
     onShuffleToggle: () -> Unit,
     onRepeatToggle: () -> Unit,
     onFavoriteToggle: () -> Unit,
-    isGradientTheme: Boolean = false
+    isGradientTheme: Boolean = false,
+    isAaosCallNavRoutingEnabled: Boolean = false,
+    onAaosCallNavRoutingToggle: () -> Unit = {}
 ) {
     val stableControlAnimationSpec = remember {
         tween<Float>(durationMillis = 240, easing = FastOutSlowInEasing)
@@ -1933,7 +1941,9 @@ private fun FullPlayerControlsSection(
                 onShuffleToggle = onShuffleToggle,
                 onRepeatToggle = onRepeatToggle,
                 onFavoriteToggle = onFavoriteToggle,
-                isGradientTheme = isGradientTheme
+                isGradientTheme = isGradientTheme,
+                isAaosCallNavRoutingEnabled = isAaosCallNavRoutingEnabled,
+                onAaosCallNavRoutingToggle = onAaosCallNavRoutingToggle
             )
         }
     }
@@ -3341,9 +3351,16 @@ private fun BottomToggleRow(
     onShuffleToggle: () -> Unit,
     onRepeatToggle: () -> Unit,
     onFavoriteToggle: () -> Unit,
-    isGradientTheme: Boolean = false
+    isGradientTheme: Boolean = false,
+    isAaosCallNavRoutingEnabled: Boolean = false,
+    onAaosCallNavRoutingToggle: () -> Unit = {}
 ) {
     val isFavorite = isFavoriteProvider()
+    val context = LocalContext.current
+    val isAutomotive = remember(context) {
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) ||
+            BuildConfig.DEVICE == "automotive"
+    }
     val rowCorners = 60.dp
     val isDark = LocalPixelMusicDarkTheme.current
     val containerBg = if (isDark) {
@@ -3435,6 +3452,20 @@ private fun BottomToggleRow(
                 iconId = if (isFavorite) R.drawable.round_favorite_24 else R.drawable.rounded_favorite_24,
                 contentDesc = "Favorite"
             )
+            if (isAutomotive) {
+                ToggleSegmentButton(
+                    modifier = commonModifier,
+                    active = isAaosCallNavRoutingEnabled,
+                    activeColor = LocalMaterialTheme.current.secondary,
+                    activeCornerRadius = rowCorners,
+                    activeContentColor = LocalMaterialTheme.current.onSecondary,
+                    inactiveColor = inactiveBg,
+                    inactiveContentColor = inactiveContentColor,
+                    onClick = onAaosCallNavRoutingToggle,
+                    iconId = R.drawable.ic_phonef,
+                    contentDesc = stringResource(R.string.setcat_aaos_call_nav_routing_title)
+                )
+            }
         }
     }
 }
