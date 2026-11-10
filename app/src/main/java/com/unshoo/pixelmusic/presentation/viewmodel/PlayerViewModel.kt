@@ -368,6 +368,18 @@ class PlayerViewModel @Inject constructor(
         initialValue = com.unshoo.pixelmusic.data.preferences.QuickPicksDisplayMode.UNCONTAINED
     )
 
+    val aaosCallNavRoutingEnabled: StateFlow<Boolean> = userPreferencesRepository.aaosCallNavRoutingEnabledFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    fun toggleAaosCallNavRouting() {
+        viewModelScope.launch {
+            userPreferencesRepository.setAaosCallNavRoutingEnabled(!aaosCallNavRoutingEnabled.value)
+        }
+    }
+
     fun toggleSearchSource() {
         viewModelScope.launch {
             val current = searchSource.value
