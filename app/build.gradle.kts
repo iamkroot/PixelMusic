@@ -70,6 +70,7 @@ val hasReleaseSigningConfig = !disableReleaseSigning &&
     releaseKeystoreFile.isFile &&
     releaseStorePassword != null &&
     releaseKeyPassword != null
+val keystoreExists = hasReleaseSigningConfig
 
 if (hasReleaseSigningConfig) {
     println("[SIGNING] Release signing config is ACTIVE using: ${releaseKeystoreFile.absolutePath} (alias: $releaseKeyAlias)")
