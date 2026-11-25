@@ -1975,7 +1975,13 @@ fun SettingsCategoryScreen(
                                         if (isLoggedIn) {
                                             settingsViewModel.setLastfmSession("")
                                             settingsViewModel.setLastfmUsername("")
+                                            settingsViewModel.setLastfmApiKey("")
+                                            settingsViewModel.setLastfmApiSecret("")
                                             com.unshoo.pixelmusic.data.lastfm.LastFM.sessionKey = null
+                                            com.unshoo.pixelmusic.data.lastfm.LastFM.initialize(
+                                                apiKey = com.unshoo.pixelmusic.BuildConfig.LASTFM_API_KEY,
+                                                secret = com.unshoo.pixelmusic.BuildConfig.LASTFM_SECRET
+                                            )
                                             Toast.makeText(context, "Logged out from Last.fm", Toast.LENGTH_SHORT).show()
                                         } else {
                                             showLoginDialog = true
@@ -2137,10 +2143,12 @@ fun SettingsCategoryScreen(
                                                  modifier = Modifier.fillMaxWidth(),
                                                  enabled = !isLoggingIn
                                              )
+                                             val hasDefaultApiKey = com.unshoo.pixelmusic.BuildConfig.LASTFM_API_KEY.isNotEmpty()
+                                             val hasDefaultApiSecret = com.unshoo.pixelmusic.BuildConfig.LASTFM_SECRET.isNotEmpty()
                                              OutlinedTextField(
                                                  value = apiKey,
                                                  onValueChange = { apiKey = it },
-                                                 label = { Text("API Key") },
+                                                 label = { Text(if (hasDefaultApiKey) "API Key (Optional)" else "API Key") },
                                                  singleLine = true,
                                                  modifier = Modifier.fillMaxWidth(),
                                                  enabled = !isLoggingIn
@@ -2148,7 +2156,7 @@ fun SettingsCategoryScreen(
                                              OutlinedTextField(
                                                  value = apiSecret,
                                                  onValueChange = { apiSecret = it },
-                                                 label = { Text("API Secret") },
+                                                 label = { Text(if (hasDefaultApiSecret) "API Secret (Optional)" else "API Secret") },
                                                  singleLine = true,
                                                  modifier = Modifier.fillMaxWidth(),
                                                  enabled = !isLoggingIn
@@ -2165,17 +2173,21 @@ fun SettingsCategoryScreen(
                                      confirmButton = {
                                          TextButton(
                                              onClick = {
-                                                 if (username.isBlank() || password.isBlank() || apiKey.isBlank() || apiSecret.isBlank()) {
+                                                 val finalApiKey = apiKey.trim().ifEmpty { com.unshoo.pixelmusic.BuildConfig.LASTFM_API_KEY }
+                                                 val finalApiSecret = apiSecret.trim().ifEmpty { com.unshoo.pixelmusic.BuildConfig.LASTFM_SECRET }
+
+                                                 if (username.isBlank() || password.isBlank()) {
+                                                     loginError = "Username and password cannot be empty"
+                                                     return@TextButton
+                                                 }
+                                                 if (finalApiKey.isBlank() || finalApiSecret.isBlank()) {
                                                      loginError = "All fields (Username, Password, API Key, and API Secret) are required"
                                                      return@TextButton
                                                  }
                                                  isLoggingIn = true
                                                  loginError = null
                                                  coroutineScope.launch {
-                                                     val finalApiKey = apiKey.trim()
-                                                     val finalApiSecret = apiSecret.trim()
-                                                     
-                                                     // Initialize client using provided credentials
+                                                     // Initialize client using provided/fallback credentials
                                                      com.unshoo.pixelmusic.data.lastfm.LastFM.initialize(finalApiKey, finalApiSecret)
                                                      
                                                      val result = com.unshoo.pixelmusic.data.lastfm.LastFM.getMobileSession(username, password)
@@ -2185,8 +2197,8 @@ fun SettingsCategoryScreen(
                                                              val name = authSession.session.name
                                                              settingsViewModel.setLastfmSession(sk)
                                                              settingsViewModel.setLastfmUsername(name)
-                                                             settingsViewModel.setLastfmApiKey(finalApiKey)
-                                                             settingsViewModel.setLastfmApiSecret(finalApiSecret)
+                                                             settingsViewModel.setLastfmApiKey(apiKey.trim())
+                                                             settingsViewModel.setLastfmApiSecret(apiSecret.trim())
                                                              com.unshoo.pixelmusic.data.lastfm.LastFM.sessionKey = sk
                                                              isLoggingIn = false
                                                              showLoginDialog = false
